@@ -1,9 +1,12 @@
 "use client";
 
-import { prData } from "@/lib/mock-data";
+"use client";
+
+import { usePRData } from "@/hooks/usePRData";
 
 export function DangerScoreCard() {
-  const score = prData.dangerScore;
+  const { prView } = usePRData();
+  const score = prView.dangerScore;
   const r = 28;
   const circumference = 2 * Math.PI * r;
   const offset = circumference - (score / 100) * circumference;
@@ -25,13 +28,6 @@ export function DangerScoreCard() {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            className="danger-ring-animate"
-            style={
-              {
-                "--ring-circumference": circumference,
-                "--ring-offset": offset,
-              } as React.CSSProperties
-            }
           />
           <defs>
             <linearGradient id="gaugeGradCompact" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -45,7 +41,7 @@ export function DangerScoreCard() {
             y={cy}
             textAnchor="middle"
             dominantBaseline="central"
-            className="fill-[var(--danger)] font-[family-name:var(--font-jetbrains)] text-[18px] font-bold"
+            className="fill-[var(--critical)] font-[family-name:var(--font-jetbrains)] text-[18px] font-bold"
             transform={`rotate(90 ${cx} ${cy})`}
           >
             {score}
@@ -53,7 +49,7 @@ export function DangerScoreCard() {
         </svg>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-[14px] font-bold text-[var(--danger)]">{prData.riskLabel}</h3>
+          <h3 className="text-[14px] font-bold text-[var(--critical)]">{prView.riskLabel}</h3>
           <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-[var(--text-secondary)]">
             Multiple high-severity findings in payment-critical paths.
           </p>

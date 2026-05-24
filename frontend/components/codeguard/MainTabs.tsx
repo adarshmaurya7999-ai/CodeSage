@@ -31,7 +31,7 @@ export function MainTabs({ children }: { children: React.ReactNode }) {
           </button>
         ))}
       </div>
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto py-4">{children}</div>
+      <div className="scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto py-3">{children}</div>
     </div>
   );
 }

@@ -28,7 +28,7 @@ export const prData = {
   number: 243,
   title: "Add payment retry logic",
   status: "open" as const,
-  dangerScore: 72,
+  dangerScore: 78,
   riskLabel: "High Risk",
   author: "sarah.chen",
   created: "May 21, 2026",
@@ -55,6 +55,48 @@ export const navItems = [
   { id: "pull-requests", label: "Pull Requests", icon: "git-pull", active: true },
   { id: "findings", label: "Findings", icon: "alert" },
   { id: "convos", label: "Conversation", icon: "message" },
+];
+
+export const changedFiles = [
+  {
+    path: "src/services/payment-retry.ts",
+    additions: 45,
+    deletions: 12,
+    checked: true,
+  },
+  {
+    path: "src/utils/backoff.ts",
+    additions: 18,
+    deletions: 3,
+    checked: true,
+  },
+  {
+    path: "tests/payment-retry.test.ts",
+    additions: 62,
+    deletions: 0,
+    checked: false,
+  },
+];
+
+export const commitHistory = [
+  {
+    sha: "a3f9c21",
+    message: "Add exponential backoff for retries",
+    author: "sarah.chen",
+    time: "2 hours ago",
+  },
+  {
+    sha: "b812e04",
+    message: "Wire payment gateway charge call",
+    author: "sarah.chen",
+    time: "5 hours ago",
+  },
+  {
+    sha: "c104d88",
+    message: "Initial payment retry scaffold",
+    author: "sarah.chen",
+    time: "Yesterday",
+  },
 ];
 
 export const findings: Finding[] = [

@@ -1,4 +1,7 @@
-import { prData } from "@/lib/mock-data";
+"use client";
+
+import { usePRData } from "@/hooks/usePRData";
+import { prData as mockPrData } from "@/lib/mock-data";
 
 const labelStyles = {
   violet: "bg-[rgba(139,92,246,0.2)] text-[#c4b5fd] border border-[rgba(139,92,246,0.3)]",
@@ -7,11 +10,12 @@ const labelStyles = {
 };
 
 export function PROverviewCard() {
+  const { prView } = usePRData();
   const rows = [
-    { key: "Author", value: prData.author },
-    { key: "Created", value: prData.created },
-    { key: "Repository", value: prData.repository },
-    { key: "Branch", value: prData.branch },
+    { key: "Author", value: prView.author },
+    { key: "Created", value: prView.created },
+    { key: "Repository", value: prView.repository },
+    { key: "Branch", value: prView.branch },
   ];
 
   return (
@@ -28,7 +32,7 @@ export function PROverviewCard() {
         ))}
       </dl>
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {prData.labels.map((label) => (
+        {mockPrData.labels.map((label) => (
           <span
             key={label.name}
             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${labelStyles[label.variant]}`}

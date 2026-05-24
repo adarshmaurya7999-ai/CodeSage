@@ -1,107 +1,173 @@
 "use client";
 
-import { useState } from "react";
-import { navItems, sidebarStats } from "@/lib/mock-data";
-import { NavIcon, ShieldIcon } from "./icons";
+import { useEffect, useState } from "react";
+import { commitHistory } from "@/lib/mock-data";
+import { usePRData } from "@/hooks/usePRData";
+import { AIChatPanel } from "./AIChatPanel";
+import { ShieldIcon } from "./icons";
+
+type SidebarTab = "changes" | "history";
 
 export function Sidebar() {
-  const [expanded, setExpanded] = useState(false);
+  const { files, selectedFilePath, setSelectedFilePath, loadingPR } = usePRData();
+  const [tab, setTab] = useState<SidebarTab>("changes");
+  const [fileFilter, setFileFilter] = useState("");
+  const [chatMinimized, setChatMinimized] = useState(false);
+
+  useEffect(() => {
+    const expandChat = () => setChatMinimized(false);
+    window.addEventListener("codesage:expand-chat", expandChat);
+    return () => window.removeEventListener("codesage:expand-chat", expandChat);
+  }, []);
+
+  const displayFiles =
+    files.length > 0
+      ? files
+      : [
+          {
+            filename: "src/services/payment-retry.ts",
+            additions: 45,
+            deletions: 12,
+            status: "modified" as const,
+          },
+        ];
+
+  const filteredFiles = displayFiles.filter((f) =>
+    f.filename.toLowerCase().includes(fileFilter.toLowerCase()),
+  );
 
   return (
-    <>
-      {expanded && (
-        <button
-          type="button"
-          className="sidebar-backdrop"
-          aria-label="Close navigation"
-          onClick={() => setExpanded(false)}
-        />
-      )}
-
-      <aside
-        className={`sidebar-panel ${expanded ? "sidebar-panel--expanded" : ""}`}
-      >
-        <div className="sidebar-panel-inner flex h-full flex-col">
-          <button
-            type="button"
-            className={`flex items-center gap-2.5 rounded-lg px-2 py-2 transition hover:bg-[var(--bg-elevated)] ${
-              expanded ? "w-full justify-start" : "mx-auto justify-center"
-            }`}
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-            aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+    <aside className="sidebar-dock flex h-full w-[272px] shrink-0 flex-col">
+      <div className="shrink-0 border-b border-[var(--border)] px-4 py-3.5">
+        <div className="brand-logo">
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-card)] text-[var(--accent)]"
+            style={{ boxShadow: "0 0 18px rgba(0, 212, 170, 0.3)" }}
           >
-            <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--accent-violet)]"
-              style={{ boxShadow: "0 0 16px rgba(139, 92, 246, 0.3)" }}
-            >
-              <ShieldIcon className="h-5 w-5" />
-            </span>
-            {expanded && (
-              <span className="sidebar-label font-[family-name:var(--font-jetbrains)] text-[13px] font-semibold tracking-tight text-[var(--text-primary)]">
-                CodeSage AI
-              </span>
-            )}
-          </button>
-
-          <nav
-            className={`mt-3 flex flex-1 flex-col gap-0.5 ${expanded ? "px-1" : "items-center"}`}
-          >
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                title={item.label}
-                className={`relative flex items-center rounded-lg transition-all duration-150 ${
-                  expanded ? "w-full gap-2.5 px-3 py-2.5 text-left" : "h-10 w-10 justify-center"
-                } ${
-                  item.active
-                    ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                    : "text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-secondary)]"
-                }`}
-              >
-                {item.active && (
-                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-[var(--accent-violet)] shadow-[0_0_8px_var(--accent-violet)]" />
-                )}
-                <NavIcon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
-                {expanded && (
-                  <span className="sidebar-label text-[13px] font-medium">{item.label}</span>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          {expanded && (
-            <div className="sidebar-label mb-2 grid grid-cols-2 gap-1.5 border-t border-[var(--border)] pt-3">
-              {sidebarStats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded border border-[var(--border)] bg-[var(--bg-primary)]/60 p-2"
-                >
-                  <p className="text-[10px] text-[var(--text-muted)]">{stat.label}</p>
-                  <p className="font-[family-name:var(--font-jetbrains)] text-[13px] font-semibold text-[var(--text-primary)]">
-                    {stat.value}
-                  </p>
-                  <span className="text-[9px] font-medium text-[var(--success)]">{stat.delta}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div
-            className={`mt-auto flex items-center gap-2 pb-1 ${expanded ? "px-1" : "justify-center"}`}
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] font-[family-name:var(--font-jetbrains)] text-[11px] font-bold text-[var(--text-muted)]">
-              N
-            </div>
-            {expanded && (
-              <span className="sidebar-label truncate text-[11px] text-[var(--text-muted)]">
-                vivek@acme
-              </span>
-            )}
-          </div>
+            <ShieldIcon className="h-5 w-5" />
+          </span>
+          <span className="brand-logo-text">
+            CodeSage <span className="brand-logo-ai">AI</span>
+          </span>
         </div>
-      </aside>
-    </>
+
+        <div className="mt-3 flex border-b border-[var(--border)]">
+          {(["changes", "history"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`flex-1 pb-2 text-[12px] font-medium capitalize transition ${
+                tab === t
+                  ? "border-b-2 border-[var(--accent)] text-[var(--text-primary)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-3 py-2">
+        {tab === "changes" ? (
+          <>
+            <label className="mb-2 flex items-center gap-2 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5">
+              <span className="text-[11px] text-[var(--text-muted)]">Filter</span>
+              <input
+                type="text"
+                value={fileFilter}
+                onChange={(e) => setFileFilter(e.target.value)}
+                placeholder="Search files"
+                className="min-w-0 flex-1 bg-transparent text-[11px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              />
+            </label>
+            {loadingPR ? (
+              <div className="space-y-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="animate-pulse rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2 py-3"
+                  >
+                    <div className="h-2 w-3/4 rounded bg-[var(--bg-sidebar)]" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <p className="mb-2 text-[11px] text-[var(--text-muted)]">
+                  {filteredFiles.length} changed file{filteredFiles.length !== 1 ? "s" : ""}
+                </p>
+                <ul className="space-y-0.5">
+                  {filteredFiles.map((file) => (
+                    <li key={file.filename}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFilePath(file.filename)}
+                        className={`flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left transition ${
+                          selectedFilePath === file.filename
+                            ? "bg-[var(--bg-card)] ring-1 ring-[rgba(0,212,170,0.35)]"
+                            : "hover:bg-[var(--bg-card)]/80"
+                        }`}
+                      >
+                        <span
+                          className={`file-indicator ${selectedFilePath === file.filename ? "file-indicator--active" : ""}`}
+                          aria-hidden
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-[family-name:var(--font-fira-code)] text-[11px] text-[var(--text-primary)]">
+                            {file.filename}
+                          </span>
+                          <span className="mt-1 flex gap-1">
+                            <span className="file-diff-badge file-diff-badge--add">
+                              +{file.additions}
+                            </span>
+                            <span className="file-diff-badge file-diff-badge--del">
+                              -{file.deletions}
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </>
+        ) : (
+          <ul className="space-y-1">
+            {commitHistory.map((commit) => (
+              <li key={commit.sha}>
+                <button
+                  type="button"
+                  className="w-full rounded-md px-2 py-2.5 text-left transition hover:bg-[var(--bg-card)]"
+                >
+                  <p className="truncate text-[12px] font-medium text-[var(--text-primary)]">
+                    {commit.message}
+                  </p>
+                  <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                    {commit.author} · {commit.time}
+                  </p>
+                  <code className="mt-0.5 block font-[family-name:var(--font-fira-code)] text-[10px] text-[var(--accent)]">
+                    {commit.sha}
+                  </code>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div
+        className={`dock-panel shrink-0 border-t border-[var(--border)] p-2 ${
+          chatMinimized ? "dock-panel--minimized" : ""
+        }`}
+      >
+        <AIChatPanel
+          minimized={chatMinimized}
+          onToggleMinimize={() => setChatMinimized((v) => !v)}
+        />
+      </div>
+    </aside>
   );
 }

@@ -27,6 +27,7 @@ export function GitHubSignInButton() {
       options: {
         redirectTo,
         skipBrowserRedirect: false,
+        scopes: "read:user user:email repo",
       },
     });
 

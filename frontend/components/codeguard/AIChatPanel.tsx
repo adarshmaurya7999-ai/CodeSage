@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SendIcon, SparkleIcon } from "./icons";
+import { ChevronDownIcon, ChevronUpIcon, SendIcon, SparkleIcon } from "./icons";
+
+interface AIChatPanelProps {
+  minimized?: boolean;
+  onToggleMinimize?: () => void;
+}
 
 interface Message {
   id: string;
@@ -37,7 +42,7 @@ function formatTime(): string {
   return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-export function AIChatPanel() {
+export function AIChatPanel({ minimized = false, onToggleMinimize }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([WELCOME, SEED_USER, SEED_AI]);
   const [isSending, setIsSending] = useState(false);
@@ -109,20 +114,40 @@ export function AIChatPanel() {
   return (
     <div className="chat-panel flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-[rgba(34,211,238,0.12)] bg-[var(--bg-surface)]/80">
       <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-3 py-2">
-        <h3 className="flex items-center gap-1.5 text-[12px] font-semibold">
-          <SparkleIcon className="h-3.5 w-3.5 text-[var(--accent-cyan)]" />
+        <h3 className="flex min-w-0 items-center gap-1.5 text-[12px] font-semibold">
+          <SparkleIcon className="h-3.5 w-3.5 shrink-0 text-[var(--accent-cyan)]" />
           <span className="text-[var(--accent-cyan)]">AI</span>
-          <span className="text-[var(--text-primary)]">Conversation</span>
+          <span className="truncate text-[var(--text-primary)]">Conversation</span>
         </h3>
-        <button
-          type="button"
-          onClick={handleNewChat}
-          className="text-[11px] text-[var(--text-muted)] transition hover:text-[var(--accent-violet)]"
-        >
-          New chat
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          {!minimized && (
+            <button
+              type="button"
+              onClick={handleNewChat}
+              className="rounded px-1.5 py-0.5 text-[11px] text-[var(--text-muted)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--accent-violet)]"
+            >
+              New chat
+            </button>
+          )}
+          {onToggleMinimize && (
+            <button
+              type="button"
+              onClick={onToggleMinimize}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-muted)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--accent-cyan)]"
+              aria-label={minimized ? "Expand AI conversation" : "Minimize AI conversation"}
+              title={minimized ? "Expand" : "Minimize"}
+            >
+              {minimized ? (
+                <ChevronUpIcon className="h-4 w-4" />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
+      {!minimized && (
       <div
         ref={scrollRef}
         className="scroll-thin chat-messages min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3"
@@ -157,10 +182,13 @@ export function AIChatPanel() {
           </div>
         )}
       </div>
+      )}
 
+      {!minimized && (
       <div className="shrink-0 border-t border-[var(--border)] p-2.5">
-        <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1.5 focus-within:border-[rgba(34,211,238,0.35)]">
+        <div className="chat-input-bar flex items-center gap-2 rounded-lg px-2.5 py-2">
           <input
+            id="ai-chat-input"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -173,13 +201,14 @@ export function AIChatPanel() {
             type="button"
             onClick={handleSend}
             disabled={isSending || !input.trim()}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--accent-violet)] text-white transition hover:brightness-110 disabled:opacity-40"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--accent)] text-[#0d0f14] transition hover:bg-[var(--accent-hover)] disabled:opacity-40"
             aria-label="Send message"
           >
             <SendIcon className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }
