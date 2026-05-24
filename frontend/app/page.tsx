@@ -1,5 +1,4 @@
-import { Dashboard } from "@/components/codeguard/Dashboard";
-
+/** Root redirects to /dashboard or /login via middleware. */
 export default function Home() {
-  return <Dashboard />;
+  return null;
 }

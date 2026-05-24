@@ -1,5 +1,6 @@
 "use client";
 
+import { UserMenu } from "@/components/auth/UserMenu";
 import { prData } from "@/lib/mock-data";
 import { ArrowLeftIcon, SparkleIcon } from "./icons";
 
@@ -62,6 +63,7 @@ export function TopBar() {
       </h1>
 
       <div className="flex items-center gap-3">
+        <UserMenu />
         <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-2.5 py-1">
           <span className="text-[11px] text-[var(--text-muted)]">Danger Score</span>
           <DangerRingMini score={prData.dangerScore} />
