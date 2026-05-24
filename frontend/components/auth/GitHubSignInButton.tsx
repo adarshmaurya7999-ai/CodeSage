@@ -20,17 +20,31 @@ export function GitHubSignInButton() {
     setError(null);
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
+    const redirectTo = `${window.location.origin}/auth/callback`;
+
+    const { data, error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
+        skipBrowserRedirect: false,
       },
     });
 
     if (signInError) {
       setError(signInError.message);
       setLoading(false);
+      return;
     }
+
+    if (data?.url) {
+      window.location.assign(data.url);
+      return;
+    }
+
+    setError(
+      "Could not start GitHub sign-in. Confirm GitHub is enabled in Supabase (Authentication → Providers) with a valid OAuth Client ID.",
+    );
+    setLoading(false);
   }
 
   return (
