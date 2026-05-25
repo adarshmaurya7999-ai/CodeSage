@@ -25,24 +25,37 @@ function isProtectedApi(pathname: string): boolean {
   return false;
 }
 
-async function isGitHubSessionValid(request: NextRequest): Promise<boolean> {
-  const raw = request.cookies.get(GITHUB_USER_COOKIE)?.value;
-  return hasValidSessionCookie(raw);
+function getSupabaseConfig(): { url: string; anonKey: string } | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !anonKey) {
+    return null;
+  }
+  return { url, anonKey };
 }
 
-export async function updateSession(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+async function isGitHubSessionValid(request: NextRequest): Promise<boolean> {
+  try {
+    const raw = request.cookies.get(GITHUB_USER_COOKIE)?.value;
+    return await hasValidSessionCookie(raw);
+  } catch {
+    return false;
+  }
+}
 
-  if (isProtectedApi(pathname) && !(await isGitHubSessionValid(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+async function getSupabaseUser(
+  request: NextRequest,
+  response: NextResponse,
+): Promise<{ user: { id: string } | null; response: NextResponse }> {
+  const config = getSupabaseConfig();
+  if (!config) {
+    return { user: null, response };
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  try {
+    let supabaseResponse = response;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+    const supabase = createServerClient(config.url, config.anonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -55,15 +68,35 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
-    },
-  );
+    });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    return { user: user ? { id: user.id } : null, response: supabaseResponse };
+  } catch {
+    return { user: null, response };
+  }
+}
+
+export async function updateSession(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+
+  if (isProtectedApi(pathname) && !(await isGitHubSessionValid(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let response = NextResponse.next({ request });
+
+  const { user: supabaseUser, response: supabaseResponse } = await getSupabaseUser(
+    request,
+    response,
+  );
+  response = supabaseResponse;
 
   const githubSession = await isGitHubSessionValid(request);
-  const isAuthenticated = Boolean(user || githubSession);
+  const isAuthenticated = Boolean(supabaseUser || githubSession);
   const isPublic = isPublicPath(pathname);
 
   if (pathname === "/") {
@@ -84,5 +117,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return response;
 }
