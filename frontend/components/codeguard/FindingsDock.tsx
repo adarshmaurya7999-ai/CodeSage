@@ -13,6 +13,12 @@ export function FindingsDock() {
     setExpanded(false);
   }, [prView.repository, prView.number]);
 
+  useEffect(() => {
+    const expand = () => setExpanded(true);
+    window.addEventListener("codesage:expand-findings", expand);
+    return () => window.removeEventListener("codesage:expand-findings", expand);
+  }, []);
+
   const canAnalyze = isLivePR && !loadingPR && !analyzing;
   const showExpanded = expanded || analyzing || hasAnalysis;
 

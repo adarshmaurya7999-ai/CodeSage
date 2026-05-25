@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePRData } from "@/hooks/usePRData";
 import { AIChatPanel } from "./AIChatPanel";
-import { ShieldIcon } from "./icons";
+import { BrandLogo } from "./BrandLogo";
 
 type SidebarTab = "changes" | "history";
 
@@ -12,12 +12,17 @@ export function Sidebar() {
     usePRData();
   const [tab, setTab] = useState<SidebarTab>("changes");
   const [fileFilter, setFileFilter] = useState("");
-  const [chatMinimized, setChatMinimized] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(true);
 
   useEffect(() => {
     const expandChat = () => setChatMinimized(false);
+    const minimizeChat = () => setChatMinimized(true);
     window.addEventListener("codesage:expand-chat", expandChat);
-    return () => window.removeEventListener("codesage:expand-chat", expandChat);
+    window.addEventListener("codesage:minimize-chat", minimizeChat);
+    return () => {
+      window.removeEventListener("codesage:expand-chat", expandChat);
+      window.removeEventListener("codesage:minimize-chat", minimizeChat);
+    };
   }, []);
 
   const filteredFiles = files.filter((f) =>
@@ -27,17 +32,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar-dock flex h-full w-[272px] shrink-0 flex-col">
       <div className="shrink-0 border-b border-[var(--border)] px-4 py-3.5">
-        <div className="brand-logo">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-card)] text-[var(--accent)]"
-            style={{ boxShadow: "0 0 18px rgba(0, 212, 170, 0.3)" }}
-          >
-            <ShieldIcon className="h-5 w-5" />
-          </span>
-          <span className="brand-logo-text">
-            CodeSage <span className="brand-logo-ai">AI</span>
-          </span>
-        </div>
+        <BrandLogo />
 
         <div className="mt-3 flex border-b border-[var(--border)]">
           {(["changes", "history"] as const).map((t) => (
@@ -99,7 +94,7 @@ export function Sidebar() {
                           <button
                             type="button"
                             onClick={() => setSelectedFilePath(file.filename)}
-                            className={`flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left transition ${
+                            className={`hover-lift flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left transition ${
                               selectedFilePath === file.filename
                                 ? "bg-[var(--bg-card)] ring-1 ring-[rgba(0,212,170,0.35)]"
                                 : "hover:bg-[var(--bg-card)]/80"
@@ -170,8 +165,8 @@ export function Sidebar() {
       </div>
 
       <div
-        className={`dock-panel shrink-0 border-t border-[var(--border)] p-2 ${
-          chatMinimized ? "dock-panel--minimized" : ""
+        className={`sidebar-chat-dock dock-panel shrink-0 border-t border-[var(--border)] p-2 ${
+          chatMinimized ? "dock-panel--minimized sidebar-chat-dock--collapsed" : "sidebar-chat-dock--expanded"
         }`}
       >
         <AIChatPanel

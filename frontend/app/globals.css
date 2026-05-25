@@ -800,6 +800,16 @@ body {
   max-height: 300px;
 }
 
+.sidebar-chat-dock.dock-panel:not(.dock-panel--minimized) {
+  --dock-height: 280px;
+  min-height: 280px;
+  max-height: 280px;
+}
+
+.sidebar-chat-dock--expanded .chat-panel {
+  animation: findings-rise 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .findings-dock-body {
   flex: 1;
   min-height: 0;
@@ -1034,4 +1044,104 @@ body {
 
 .scroll-thin.chat-messages::-webkit-scrollbar {
   width: 5px;
+}
+
+/* ── Team Analytics (match PR review palette) ── */
+.team-analytics {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+.team-analytics-dev-card {
+  border-color: rgba(0, 212, 170, 0.12);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(0, 212, 170, 0.06);
+}
+
+.team-analytics-dev-card:hover {
+  border-color: rgba(0, 212, 170, 0.28);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 212, 170, 0.08);
+}
+
+.team-analytics-table-wrap {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-panel) 100%);
+}
+
+.team-analytics-thead-row {
+  background: var(--bg-sidebar);
+}
+
+.team-analytics-thead-row th {
+  background: var(--bg-sidebar);
+}
+
+.team-analytics-date-picker {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+.team-analytics-empty {
+  background: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-panel) 100%);
+}
+
+/* ── Interactive hover effects ── */
+.hover-lift {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.2, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.nav-tab-hover:hover {
+  box-shadow: 0 0 12px rgba(0, 212, 170, 0.12);
+}
+
+.hover-glow-accent:hover {
+  box-shadow: 0 0 20px rgba(0, 212, 170, 0.45);
+  filter: brightness(1.05);
+}
+
+.hover-text-accent:hover {
+  color: var(--accent);
+}
+
+.developer-card:hover {
+  border-color: rgba(0, 212, 170, 0.25);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(139, 92, 246, 0.08);
+}
+
+.analytics-table-row:hover {
+  background: rgba(34, 211, 238, 0.04);
+}
+
+.analytics-table-row:hover .risk-bar-fill {
+  filter: brightness(1.15);
+  box-shadow: 0 0 8px rgba(255, 165, 2, 0.35);
+}
+
+.team-analytics-table th button:hover {
+  color: var(--accent);
+}
+
+.sidebar-dock button:hover:not(:disabled) {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ask-ai-glow:hover {
+  box-shadow:
+    0 0 20px rgba(109, 40, 217, 0.35),
+    0 0 8px rgba(34, 211, 238, 0.2);
 }

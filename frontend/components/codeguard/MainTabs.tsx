@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const tabs = ["Conversation", "Files", "Commits", "Checks"];
+const tabs = ["Files", "Commits", "Checks"];
 
 export function MainTabs({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState("Files");
