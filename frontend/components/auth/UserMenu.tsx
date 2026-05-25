@@ -4,39 +4,53 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+interface GitHubAuthUser {
+  login: string;
+  name: string | null;
+  avatar_url: string;
+  email: string | null;
+}
+
 export function UserMenu() {
-  const [user, setUser] = useState<User | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
+  const [githubUser, setGithubUser] = useState<GitHubAuthUser | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => setSupabaseUser(data.user));
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      setSupabaseUser(session?.user ?? null);
     });
+
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data: { user?: GitHubAuthUser | null }) => setGithubUser(data.user ?? null))
+      .catch(() => setGithubUser(null));
 
     return () => subscription.unsubscribe();
   }, []);
 
   async function handleSignOut() {
     setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/login";
+    window.location.href = "/api/auth/signout";
   }
 
-  if (!user) return null;
-
-  const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+  const avatarUrl =
+    githubUser?.avatar_url ??
+    (supabaseUser?.user_metadata?.avatar_url as string | undefined);
   const displayName =
-    (user.user_metadata?.user_name as string | undefined) ??
-    (user.user_metadata?.full_name as string | undefined) ??
-    user.email ??
-    "User";
+    githubUser?.login ??
+    (supabaseUser?.user_metadata?.user_name as string | undefined) ??
+    (supabaseUser?.user_metadata?.full_name as string | undefined) ??
+    supabaseUser?.email ??
+    null;
+
+  if (!displayName) return null;
 
   return (
     <div className="flex items-center gap-2.5">

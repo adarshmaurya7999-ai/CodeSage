@@ -58,6 +58,25 @@ export type FindingInsert = {
   created_at?: string;
 };
 
+export interface UserRow {
+  id: string;
+  github_id: number;
+  github_login: string;
+  name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GitHubTokenRow {
+  user_id: string;
+  access_token: string;
+  scopes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -71,6 +90,18 @@ export interface Database {
         Row: FindingRow;
         Insert: FindingInsert;
         Update: Partial<FindingInsert>;
+        Relationships: [];
+      };
+      users: {
+        Row: UserRow;
+        Insert: Partial<UserRow> & { github_id: number; github_login: string };
+        Update: Partial<UserRow>;
+        Relationships: [];
+      };
+      github_tokens: {
+        Row: GitHubTokenRow;
+        Insert: Partial<GitHubTokenRow> & { user_id: string; access_token: string };
+        Update: Partial<GitHubTokenRow>;
         Relationships: [];
       };
     };

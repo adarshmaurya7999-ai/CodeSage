@@ -59,16 +59,60 @@ export function PRSelectorModal({ open, onClose }: PRSelectorModalProps) {
   const fetchPulls = useCallback(async (repo: Repository) => {
     setLoading(true);
     setError(null);
+    setPulls([]);
     try {
-      const [owner, name] = repo.full_name.split("/");
+      const owner = repo.owner.login;
+      const name = repo.name;
       const res = await fetch(
         `/api/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls`,
+        { cache: "no-store" },
       );
-      const json = (await res.json()) as { pulls?: PullRequest[]; error?: string };
+      const json = (await res.json()) as {
+        pulls?: PullRequest[];
+        error?: string;
+        meta?: {
+          count: number;
+          usedFallback?: boolean;
+          source?: string;
+          hint?: string;
+          debug?: {
+            restOpen?: number;
+            restAll?: number;
+            issuesOpen?: number;
+            repoOpenIssues?: number;
+            oauthScopes?: string;
+            lastError?: string;
+          };
+        };
+      };
       if (!res.ok) throw new Error(json.error ?? "Failed to load pull requests");
-      setPulls(json.pulls ?? []);
-      if ((json.pulls ?? []).length === 0) {
-        setError("No open pull requests in this repository.");
+
+      const list = json.pulls ?? [];
+      setPulls(list);
+
+      if (list.length === 0) {
+        const debug = json.meta?.debug;
+        if (debug?.restAll && debug.restAll > 0) {
+          setError(
+            `${owner}/${name} has ${debug.restAll} pull request(s) on GitHub, but none are open. Open or reopen a PR on GitHub, then try again.`,
+          );
+        } else if (json.meta?.hint === "no_prs_on_github" || debug?.restAll === 0) {
+          setError(
+            `GitHub shows no pull requests in ${owner}/${name} yet. Create one on GitHub (Pull requests → New pull request), then reopen this dialog.`,
+          );
+        } else if (
+          debug?.oauthScopes &&
+          !debug.oauthScopes.includes("repo")
+        ) {
+          setError(
+            `Your GitHub token is missing the repo scope (current: ${debug.oauthScopes}). Sign out and sign in again, then approve repository access.`,
+          );
+        } else {
+          const hint = debug?.lastError ? ` ${debug.lastError}` : "";
+          setError(
+            `No open pull requests found for ${owner}/${name}.${hint} Sign out and sign in again if you recently granted repo access.`,
+          );
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load pull requests");
@@ -118,7 +162,8 @@ export function PRSelectorModal({ open, onClose }: PRSelectorModalProps) {
 
   async function handleSelectPull(pull: PullRequest) {
     if (!selectedRepo) return;
-    const [owner, name] = selectedRepo.full_name.split("/");
+    const owner = selectedRepo.owner.login;
+    const name = selectedRepo.name;
     setLoadingPR(true);
     setError(null);
     try {

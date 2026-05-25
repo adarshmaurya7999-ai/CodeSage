@@ -31,3 +31,26 @@ create table findings (
 -- Index for fast lookups by repo
 create index idx_prs_repo on pull_requests(owner, repo);
 create index idx_findings_pr on findings(pull_request_id);
+
+-- GitHub OAuth users (CodeSage login)
+create table users (
+  id              text primary key default gen_random_uuid()::text,
+  github_id       bigint unique not null,
+  github_login    text unique not null,
+  name            text,
+  avatar_url      text,
+  email           text,
+  created_at      timestamp with time zone default now(),
+  updated_at      timestamp with time zone default now()
+);
+
+-- GitHub access tokens (server-side only; use service role from API routes)
+create table github_tokens (
+  user_id         text primary key references users(id) on delete cascade,
+  access_token    text not null,
+  scopes          text,
+  created_at      timestamp with time zone default now(),
+  updated_at      timestamp with time zone default now()
+);
+
+create index idx_users_github_login on users(github_login);

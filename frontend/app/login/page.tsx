@@ -44,57 +44,37 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
           <details className="mt-6 text-[11px] leading-relaxed text-[var(--text-muted)]">
             <summary className="cursor-pointer text-center text-[var(--text-secondary)] hover:text-[var(--accent-cyan)]">
-              GitHub login setup (fix 404)
+              GitHub OAuth setup (CodeSage Local)
             </summary>
             <ol className="mt-3 list-decimal space-y-2 pl-4 text-left">
               <li>
-                Create a <strong>GitHub OAuth App</strong> (not your GitHub App for webhooks):{" "}
+                Create a <strong>GitHub OAuth App</strong> at{" "}
                 <a
-                  href="https://github.com/settings/developers"
-                  className="text-[var(--accent-cyan)] underline"
+                  href="https://github.com/settings/applications/new"
+                  className="text-[var(--accent)] underline"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Developer settings → OAuth Apps
+                  GitHub Developer Settings
                 </a>
                 .
               </li>
               <li>
-                Set <strong>Authorization callback URL</strong> to your Supabase callback (copy
-                from Supabase → Authentication → Providers → GitHub):
-                <code className="mt-1 block break-all rounded bg-[var(--bg-elevated)] px-2 py-1 text-[10px] text-[var(--accent-cyan-dim)]">
-                  {process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/callback
+                <strong>Authorization callback URL</strong> (must match exactly):
+                <code className="mt-1 block break-all rounded bg-[var(--bg-elevated)] px-2 py-1 text-[10px] text-[var(--accent)]">
+                  http://localhost:3000/api/auth/github/callback
                 </code>
               </li>
               <li>
-                Copy the OAuth app&apos;s <strong>Client ID</strong> (looks like{" "}
-                <code className="text-[var(--text-secondary)]">Ov23li…</code>) —{" "}
-                <em>not</em> the app name &quot;CodeSage&quot;.
+                Put Client ID + Secret in <code>frontend/.env.local</code> as{" "}
+                <code>GITHUB_OAUTH_CLIENT_ID</code> and <code>GITHUB_OAUTH_CLIENT_SECRET</code>.
               </li>
-              <li>
-                In{" "}
-                <a
-                  href="https://supabase.com/dashboard/project/_/auth/providers"
-                  className="text-[var(--accent-cyan)] underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Supabase → Authentication → Providers → GitHub
-                </a>
-                , paste Client ID + Client Secret and enable GitHub.
-              </li>
-              <li>
-                Under <strong>URL Configuration</strong>, set Site URL to{" "}
-                <code className="text-[var(--text-secondary)]">http://localhost:3000</code> and add
-                only this redirect URL (do not add the Supabase{" "}
-                <code className="text-[var(--text-secondary)]">/auth/v1/callback</code> here — that
-                belongs on the GitHub OAuth app only):{" "}
-                <code className="text-[var(--text-secondary)]">http://localhost:3000/auth/callback</code>
-              </li>
+              <li>Uncheck <strong>Enable Device Flow</strong> on the OAuth app (web login only).</li>
+              <li>Restart <code>npm run dev</code>, then sign in again.</li>
             </ol>
-            <p className="mt-3 text-[10px] text-[var(--danger)]">
-              If GitHub shows 404, Supabase has the wrong Client ID (e.g. the app name instead of the
-              OAuth Client ID from GitHub).
+            <p className="mt-3 text-[10px] text-[var(--critical)]">
+              Do not mix Supabase callback URL on this OAuth app — that URL belongs only on the
+              separate app configured in Supabase Dashboard.
             </p>
           </details>
         </div>

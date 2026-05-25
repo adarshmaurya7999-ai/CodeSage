@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { GitHubApiError, githubFetch } from "@/lib/github/api";
 import { mapPrFile, mapPullRequest, normalizeFileStatus } from "@/lib/github/mapGithub";
 import { parsePatchToDiffLines } from "@/lib/github/parsePatch";
-import { requireGitHubAccessToken } from "@/lib/github/session";
+import { requireGitHubSession } from "@/lib/github/session";
 import type { LoadedPR, PRFile } from "@/lib/github/types";
 
 export const runtime = "nodejs";
@@ -67,7 +67,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Nex
       return NextResponse.json({ error: "Invalid pull request number" }, { status: 400 });
     }
 
-    const token = await requireGitHubAccessToken();
+    const { token } = await requireGitHubSession();
 
     const pullRaw = await githubFetch<GithubPullDetail>(
       `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${pullNumber}`,

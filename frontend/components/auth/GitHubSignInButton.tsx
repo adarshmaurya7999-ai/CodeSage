@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -13,39 +12,11 @@ function GitHubIcon({ className }: { className?: string }) {
 
 export function GitHubSignInButton() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSignIn() {
+  function handleSignIn() {
     setLoading(true);
-    setError(null);
-
-    const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback`;
-
-    const { data, error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo,
-        skipBrowserRedirect: false,
-        scopes: "read:user user:email repo",
-      },
-    });
-
-    if (signInError) {
-      setError(signInError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data?.url) {
-      window.location.assign(data.url);
-      return;
-    }
-
-    setError(
-      "Could not start GitHub sign-in. Confirm GitHub is enabled in Supabase (Authentication → Providers) with a valid OAuth Client ID.",
-    );
-    setLoading(false);
+    // CodeSage Local OAuth App — callback: /api/auth/github/callback
+    window.location.assign("/api/auth/github");
   }
 
   return (
@@ -59,11 +30,10 @@ export function GitHubSignInButton() {
         <GitHubIcon className="h-5 w-5" />
         {loading ? "Redirecting to GitHub…" : "Continue with GitHub"}
       </button>
-      {error && (
-        <p className="text-center text-[12px] text-[var(--danger)]" role="alert">
-          {error}
-        </p>
-      )}
+      <p className="text-center text-[10px] leading-relaxed text-[var(--text-muted)]">
+        Uses your CodeSage Local GitHub OAuth app. Callback:{" "}
+        <code className="text-[var(--accent)]">/api/auth/github/callback</code>
+      </p>
     </div>
   );
 }

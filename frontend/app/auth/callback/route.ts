@@ -11,6 +11,14 @@ export async function GET(request: NextRequest) {
   const oauthError =
     searchParams.get("error_description") ?? searchParams.get("error");
 
+  // Legacy Supabase callback — sign-in now uses /api/auth/github
+  if (!code && !oauthError) {
+    const reason = encodeURIComponent(
+      "This callback is no longer used. Sign in from the login page with “Continue with GitHub”.",
+    );
+    return NextResponse.redirect(`${origin}/login?error=auth&reason=${reason}`);
+  }
+
   let next = searchParams.get("next") ?? "/dashboard";
   if (!next.startsWith("/") || next.startsWith("//")) {
     next = "/dashboard";
