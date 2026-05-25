@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { prData } from "@/lib/mock-data";
+import { usePRData } from "@/hooks/usePRData";
 import { DangerScoreCard } from "./DangerScoreCard";
 import { PROverviewCard } from "./PROverviewCard";
 
@@ -13,17 +13,11 @@ interface DangerScorePopoverProps {
 }
 
 export function DangerScorePopover({ open, onClose, anchorRef }: DangerScorePopoverProps) {
-  const [analyzing, setAnalyzing] = useState(false);
+  const { prView, analyzing, hasAnalysis, isLivePR } = usePRData();
   const [position, setPosition] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
-    if (!open) {
-      setAnalyzing(false);
-      return;
-    }
-
-    setAnalyzing(true);
-    const timer = window.setTimeout(() => setAnalyzing(false), 1400);
+    if (!open) return;
 
     const updatePosition = () => {
       const el = anchorRef.current;
@@ -37,13 +31,13 @@ export function DangerScorePopover({ open, onClose, anchorRef }: DangerScorePopo
 
     updatePosition();
     window.addEventListener("resize", updatePosition);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", updatePosition);
-    };
+    return () => window.removeEventListener("resize", updatePosition);
   }, [open, anchorRef]);
 
   if (!open || typeof document === "undefined") return null;
+
+  const showAnalyzing = analyzing && isLivePR;
+  const showResults = hasAnalysis && isLivePR;
 
   return createPortal(
     <>
@@ -77,13 +71,26 @@ export function DangerScorePopover({ open, onClose, anchorRef }: DangerScorePopo
         </div>
 
         <div className="space-y-3 p-4">
-          {analyzing ? (
+          {!isLivePR && (
+            <p className="py-4 text-center text-[13px] text-[var(--text-muted)]">
+              Load a pull request and run analysis to see risk details.
+            </p>
+          )}
+          {showAnalyzing && (
             <div className="flex flex-col items-center gap-3 py-8">
               <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent-cyan)]" />
-              <p className="text-[13px] text-[var(--text-secondary)]">Analyzing PR #{prData.number}…</p>
-              <p className="text-[11px] text-[var(--text-muted)]">Scanning diffs and security patterns</p>
+              <p className="text-[13px] text-[var(--text-secondary)]">
+                Analyzing PR #{prView.number}…
+              </p>
             </div>
-          ) : (
+          )}
+          {isLivePR && !showAnalyzing && !showResults && (
+            <p className="py-4 text-center text-[13px] text-[var(--text-muted)]">
+              Click <strong className="text-[var(--accent)]">Start analysis</strong> to generate a
+              danger score.
+            </p>
+          )}
+          {showResults && (
             <>
               <DangerScoreCard />
               <PROverviewCard />

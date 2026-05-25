@@ -9,40 +9,44 @@ import {
   type ReactNode,
 } from "react";
 import type { AnalysisResult, LoadedPR, PRViewState } from "@/lib/github/types";
-import type { DiffLine, Finding } from "@/lib/mock-data";
-import { diffLines as mockDiffLines, findings as mockFindings, prData as mockPrData } from "@/lib/mock-data";
+import type { DiffLine, Finding, PRCommit } from "@/lib/review/types";
+
+const EMPTY_VIEW: PRViewState = {
+  repository: "—",
+  branch: "—",
+  number: 0,
+  title: "Select a pull request",
+  status: "open",
+  author: "—",
+  created: "—",
+  dangerScore: 0,
+  riskLabel: "Not analyzed",
+  filePath: "",
+  diffStats: { additions: 0, deletions: 0 },
+};
 
 interface PRDataContextValue {
   prView: PRViewState;
+  prSessionKey: string | null;
   files: LoadedPR["files"];
+  commits: PRCommit[];
   selectedFilePath: string;
   setSelectedFilePath: (path: string) => void;
   selectedFileDiffLines: DiffLine[];
   findings: Finding[];
   analysisSummary: string | null;
   loadingPR: boolean;
+  loadingCommits: boolean;
   analyzing: boolean;
+  hasAnalysis: boolean;
   error: string | null;
   isLivePR: boolean;
   loadPullRequest: (owner: string, repo: string, pullNumber: number) => Promise<void>;
+  runAnalysis: () => Promise<void>;
   clearError: () => void;
 }
 
 const PRDataContext = createContext<PRDataContextValue | null>(null);
-
-const defaultView: PRViewState = {
-  repository: mockPrData.repository,
-  branch: mockPrData.branch,
-  number: mockPrData.number,
-  title: mockPrData.title,
-  status: mockPrData.status,
-  author: mockPrData.author,
-  created: mockPrData.created,
-  dangerScore: mockPrData.dangerScore,
-  riskLabel: mockPrData.riskLabel,
-  filePath: mockPrData.filePath,
-  diffStats: mockPrData.diffStats,
-};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -52,71 +56,148 @@ function formatDate(iso: string): string {
   });
 }
 
+function applyFindingFlags(lines: DiffLine[], filePath: string, findings: Finding[]): DiffLine[] {
+  if (!findings.length) {
+    return lines;
+  }
+
+  return lines.map((line) => {
+    const matches = findings.some(
+      (f) =>
+        (f.file === filePath || f.file.endsWith(filePath) || filePath.endsWith(f.file)) &&
+        f.line != null &&
+        (f.line === line.newNum || f.line === line.oldNum),
+    );
+    if (matches && line.type !== "remove") {
+      return { ...line, type: "flagged" as const };
+    }
+    return line;
+  });
+}
+
 export function PRDataProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState<LoadedPR | null>(null);
+  const [commits, setCommits] = useState<PRCommit[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState("");
-  const [findings, setFindings] = useState<Finding[]>(mockFindings);
+  const [findings, setFindings] = useState<Finding[]>([]);
   const [analysisSummary, setAnalysisSummary] = useState<string | null>(null);
-  const [dangerMeta, setDangerMeta] = useState({
-    score: mockPrData.dangerScore,
-    label: mockPrData.riskLabel,
-  });
+  const [hasAnalysis, setHasAnalysis] = useState(false);
+  const [dangerMeta, setDangerMeta] = useState({ score: 0, label: "Not analyzed" });
   const [loadingPR, setLoadingPR] = useState(false);
+  const [loadingCommits, setLoadingCommits] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
 
-  const loadPullRequest = useCallback(async (owner: string, repo: string, pullNumber: number) => {
-    setLoadingPR(true);
-    setError(null);
+  const fetchCommits = useCallback(async (owner: string, repo: string, pullNumber: number) => {
+    setLoadingCommits(true);
     try {
       const res = await fetch(
-        `/api/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${pullNumber}/files`,
+        `/api/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${pullNumber}/commits`,
       );
-      const json = (await res.json()) as LoadedPR & { error?: string };
-      if (!res.ok) {
-        throw new Error(json.error ?? "Failed to load pull request");
-      }
-      if (!json.files.length) {
-        throw new Error("This pull request has no changed files to display.");
-      }
-
-      setLoaded(json);
-      setSelectedFilePath(json.files[0].filename);
-
-      setAnalyzing(true);
-      const analysisRes = await fetch("/api/analyze-pr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owner, repo, pull: json.pull, files: json.files }),
-      });
-      const analysis = (await analysisRes.json()) as AnalysisResult & { error?: string };
-      setAnalyzing(false);
-
-      if (analysisRes.ok && analysis.findings) {
-        setFindings(analysis.findings.length > 0 ? analysis.findings : mockFindings);
-        setAnalysisSummary(analysis.summary);
-        setDangerMeta({ score: analysis.dangerScore, label: analysis.riskLabel });
-      } else {
-        setFindings(mockFindings);
-        setDangerMeta({ score: mockPrData.dangerScore, label: mockPrData.riskLabel });
-        setError(analysis.error ?? "Analysis failed — showing demo findings.");
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load PR";
-      setError(message);
-      throw err;
+      const json = (await res.json()) as { commits?: PRCommit[] };
+      setCommits(json.commits ?? []);
+    } catch {
+      setCommits([]);
     } finally {
-      setLoadingPR(false);
-      setAnalyzing(false);
+      setLoadingCommits(false);
     }
   }, []);
 
+  const loadPullRequest = useCallback(
+    async (owner: string, repo: string, pullNumber: number) => {
+      setLoadingPR(true);
+      setError(null);
+      setHasAnalysis(false);
+      setAnalysisSummary(null);
+      setFindings([]);
+      setCommits([]);
+
+      try {
+        const res = await fetch(
+          `/api/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${pullNumber}/files`,
+        );
+        const json = (await res.json()) as LoadedPR & { error?: string };
+        if (!res.ok) {
+          throw new Error(json.error ?? "Failed to load pull request");
+        }
+        if (!json.files.length) {
+          throw new Error("This pull request has no changed files to display.");
+        }
+
+        setLoaded(json);
+        setSelectedFilePath(json.files[0].filename);
+        setDangerMeta({ score: 0, label: "Not analyzed" });
+        void fetchCommits(owner, repo, pullNumber);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load PR";
+        setError(message);
+        throw err;
+      } finally {
+        setLoadingPR(false);
+      }
+    },
+    [fetchCommits],
+  );
+
+  const runAnalysis = useCallback(async () => {
+    if (!loaded) {
+      setError("Load a pull request before running analysis.");
+      return;
+    }
+
+    setAnalyzing(true);
+    setError(null);
+
+    try {
+      const analysisRes = await fetch("/api/analyze-pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner: loaded.owner,
+          repo: loaded.repo,
+          pull: loaded.pull,
+          files: loaded.files,
+        }),
+      });
+      const analysis = (await analysisRes.json()) as AnalysisResult & { error?: string };
+
+      if (!analysisRes.ok || !analysis.findings) {
+        const msg = analysis.error ?? "Analysis failed";
+        if (analysisRes.status === 402) {
+          throw new Error(
+            `${msg} Try adding credits at openrouter.ai/settings, or set OPENROUTER_MAX_TOKENS=1024 in .env.local.`,
+          );
+        }
+        throw new Error(msg);
+      }
+
+      setFindings(analysis.findings);
+      setAnalysisSummary(analysis.summary);
+      setDangerMeta({ score: analysis.dangerScore, label: analysis.riskLabel });
+      setHasAnalysis(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Analysis failed";
+      setError(message);
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [loaded]);
+
   const isLivePR = loaded != null;
 
+  const prSessionKey = useMemo(() => {
+    if (!loaded) {
+      return null;
+    }
+    return `${loaded.owner}/${loaded.repo}#${loaded.pull.number}`;
+  }, [loaded]);
+
   const prView = useMemo((): PRViewState => {
-    if (!loaded) return defaultView;
+    if (!loaded) {
+      return EMPTY_VIEW;
+    }
     const file =
       loaded.files.find((f) => f.filename === selectedFilePath) ?? loaded.files[0];
     return {
@@ -129,33 +210,43 @@ export function PRDataProvider({ children }: { children: ReactNode }) {
       created: formatDate(loaded.pull.created_at),
       dangerScore: dangerMeta.score,
       riskLabel: dangerMeta.label,
-      filePath: file?.filename ?? defaultView.filePath,
+      filePath: file?.filename ?? "",
       diffStats: file
         ? { additions: file.additions, deletions: file.deletions }
         : { additions: loaded.pull.additions, deletions: loaded.pull.deletions },
     };
   }, [loaded, selectedFilePath, dangerMeta]);
 
+  const activeFindings = isLivePR && !hasAnalysis && !analyzing ? [] : findings;
+
   const selectedFileDiffLines = useMemo((): DiffLine[] => {
-    if (!loaded) return mockDiffLines;
+    if (!loaded) {
+      return [];
+    }
     const file =
       loaded.files.find((f) => f.filename === selectedFilePath) ?? loaded.files[0];
-    return file?.diffLines ?? [];
-  }, [loaded, selectedFilePath]);
+    const lines = file?.diffLines ?? [];
+    return applyFindingFlags(lines, file?.filename ?? "", activeFindings);
+  }, [loaded, selectedFilePath, activeFindings]);
 
   const value: PRDataContextValue = {
     prView,
+    prSessionKey,
     files: loaded?.files ?? [],
-    selectedFilePath: selectedFilePath || prView.filePath,
+    commits,
+    selectedFilePath,
     setSelectedFilePath,
     selectedFileDiffLines,
-    findings,
+    findings: activeFindings,
     analysisSummary,
     loadingPR,
+    loadingCommits,
     analyzing,
+    hasAnalysis,
     error,
     isLivePR,
     loadPullRequest,
+    runAnalysis,
     clearError,
   };
 

@@ -1,4 +1,4 @@
-import type { DiffLine, Finding, Severity } from "@/lib/mock-data";
+import type { DiffLine, Finding, Severity } from "@/lib/review/types";
 
 export interface GitHubOwner {
   login: string;

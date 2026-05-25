@@ -3,7 +3,12 @@
 import { useRef, useState } from "react";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { usePRData } from "@/hooks/usePRData";
-import { navItems } from "@/lib/mock-data";
+const navItems = [
+  { id: "overview", label: "Overview", icon: "grid" },
+  { id: "pull-requests", label: "Pull Requests", icon: "git-pull", active: true },
+  { id: "findings", label: "Findings", icon: "alert" },
+  { id: "convos", label: "Conversation", icon: "message" },
+] as const;
 import { ArrowLeftIcon, NavIcon, SparkleIcon } from "./icons";
 import { DangerScorePopover } from "./DangerScorePopover";
 import { PRSelectorModal } from "./PRSelectorModal";
@@ -95,7 +100,7 @@ export function TopBar() {
                 if (item.id === "pull-requests") setPrModalOpen(true);
               }}
               className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] transition ${
-                item.active
+                item.id === "pull-requests"
                   ? "bg-[var(--bg-card)] text-[var(--text-primary)]"
                   : "text-[var(--text-muted)] hover:bg-[var(--bg-card)]/60 hover:text-[var(--text-secondary)]"
               }`}
@@ -107,15 +112,17 @@ export function TopBar() {
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <span
-            className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-              prView.status === "open"
-                ? "text-[#052e1f] bg-[var(--success)]"
-                : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
-            }`}
-          >
-            {prView.status === "open" ? "Open" : "Closed"}
-          </span>
+          {isLivePR && (
+            <span
+              className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                prView.status === "open"
+                  ? "text-[#052e1f] bg-[var(--success)]"
+                  : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
+              }`}
+            >
+              {prView.status === "open" ? "Open" : "Closed"}
+            </span>
+          )}
 
           <button
             ref={dangerBtnRef}

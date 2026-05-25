@@ -1,8 +1,8 @@
 "use client";
 
 import { PRDataProvider } from "@/hooks/usePRData";
-import { AIFindingsPanel } from "./AIFindingsPanel";
 import { CodeDiffViewer } from "./CodeDiffViewer";
+import { FindingsDock } from "./FindingsDock";
 import { JarvisBackground } from "./JarvisBackground";
 import { MainTabs } from "./MainTabs";
 import { ReviewProvider } from "./ReviewContext";
@@ -22,16 +22,14 @@ export function Dashboard() {
             <div className="flex min-h-0 flex-1 overflow-hidden">
               <Sidebar />
 
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                 <main className="main-content-area flex min-h-0 flex-1 flex-col overflow-hidden px-5 pt-1">
                   <MainTabs>
                     <CodeDiffViewer />
                   </MainTabs>
                 </main>
 
-                <div className="dock-panel shrink-0 border-t border-[var(--border)] bg-[var(--bg-panel)] px-5 py-3">
-                  <AIFindingsPanel docked />
-                </div>
+                <FindingsDock />
               </div>
             </div>
           </div>

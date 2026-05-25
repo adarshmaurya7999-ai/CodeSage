@@ -8,8 +8,8 @@ export function MainTabs({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState("Files");
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col pt-1">
-      <div className="flex gap-8 border-b border-[var(--border)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-1">
+      <div className="flex shrink-0 gap-8 border-b border-[var(--border)]">
         {tabs.map((tab) => (
           <button
             key={tab}
@@ -31,7 +31,13 @@ export function MainTabs({ children }: { children: React.ReactNode }) {
           </button>
         ))}
       </div>
-      <div className="scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto py-3">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden py-3">
+        {active === "Files" ? children : (
+          <div className="flex flex-1 items-center justify-center text-[13px] text-[var(--text-muted)]">
+            {active} view coming soon
+          </div>
+        )}
+      </div>
     </div>
   );
 }

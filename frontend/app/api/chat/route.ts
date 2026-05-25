@@ -1,51 +1,110 @@
 import { chatCompletion } from "@/lib/openrouter";
+import { requireGitHubSession } from "@/lib/github/session";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+interface ChatMessageInput {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface FindingContext {
+  file: string;
+  line?: number;
+  severity: string;
+  title: string;
+  description?: string;
+}
+
 interface ChatRequestBody {
   question: string;
+  messages?: ChatMessageInput[];
+  prContext?: {
+    repository: string;
+    number: number;
+    title: string;
+    branch: string;
+    selectedFile?: string;
+    analysisSummary?: string | null;
+    findings?: FindingContext[];
+  };
   context?: {
     file?: string;
     line?: number;
     comment?: string;
-    fix_suggestion?: string | null;
     severity?: string;
-    category?: string;
   };
 }
 
-/**
- * Ask-the-reviewer chat — OpenRouter (GPT-5.2 Chat) with finding context.
- */
+function buildSystemPrompt(): string {
+  return `You are CodeSage AI, an expert code reviewer. Answer using only the PR context provided.
+Be concise. Reference files and line numbers when relevant. If no PR is loaded, tell the user to select a pull request first.`;
+}
+
+function buildUserPrompt(body: ChatRequestBody): string {
+  const parts: string[] = [];
+
+  if (body.prContext) {
+    const pr = body.prContext;
+    parts.push(
+      `PR #${pr.number}: ${pr.title}`,
+      `Repository: ${pr.repository}`,
+      `Branch: ${pr.branch}`,
+    );
+    if (pr.selectedFile) {
+      parts.push(`Currently viewing file: ${pr.selectedFile}`);
+    }
+    if (pr.analysisSummary) {
+      parts.push(`Analysis summary: ${pr.analysisSummary}`);
+    }
+    if (pr.findings?.length) {
+      parts.push(
+        "Findings:",
+        ...pr.findings.map(
+          (f) =>
+            `- [${f.severity}] ${f.file}${f.line ? `:${f.line}` : ""} — ${f.title}${f.description ? `: ${f.description}` : ""}`,
+        ),
+      );
+    }
+  }
+
+  if (body.context?.file) {
+    parts.push(
+      `Focused finding: ${body.context.file}${body.context.line ? `:${body.context.line}` : ""}`,
+      body.context.comment ? `Note: ${body.context.comment}` : "",
+    );
+  }
+
+  if (body.messages?.length) {
+    parts.push(
+      "Prior conversation:",
+      ...body.messages.slice(-8).map((m) => `${m.role}: ${m.content}`),
+    );
+  }
+
+  parts.push(`User question: ${body.question.trim()}`);
+  return parts.filter(Boolean).join("\n");
+}
+
 export async function POST(req: Request): Promise<NextResponse> {
   try {
+    await requireGitHubSession();
+
     const body = (await req.json()) as ChatRequestBody;
     if (!body.question?.trim()) {
       return NextResponse.json({ error: "question is required" }, { status: 400 });
     }
 
-    const ctx = body.context;
-    const contextBlock = ctx
-      ? `
-Finding context:
-- File: ${ctx.file ?? "unknown"}
-- Line: ${ctx.line ?? "unknown"}
-- Severity: ${ctx.severity ?? "unknown"}
-- Category: ${ctx.category ?? "unknown"}
-- Comment: ${ctx.comment ?? ""}
-- Suggested fix: ${ctx.fix_suggestion ?? "none"}
-`
-      : "";
-
-    const answer = await chatCompletion(
-      "You are CodeSage AI, an expert code reviewer. Answer concisely about the given PR finding. Reference the file and line when relevant.",
-      `${contextBlock}\n\nUser question: ${body.question.trim()}`,
-    );
+    const answer = await chatCompletion(buildSystemPrompt(), buildUserPrompt(body));
 
     return NextResponse.json({ answer });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Chat failed";
+
+    if (message.includes("Not signed in") || message.includes("not found in database")) {
+      return NextResponse.json({ error: message }, { status: 401 });
+    }
     const status =
       error instanceof Error && "status" in error
         ? (error as Error & { status?: number }).status
@@ -70,16 +129,6 @@ Finding context:
             "OpenRouter rate limit reached. Wait a moment and retry, or check usage at https://openrouter.ai/settings.",
         },
         { status: 429 },
-      );
-    }
-
-    if (status === 404 || message.toLowerCase().includes("model")) {
-      return NextResponse.json(
-        {
-          error:
-            "Model not found. Set OPENROUTER_MODEL in .env.local (default: openai/gpt-5.2-chat).",
-        },
-        { status: 400 },
       );
     }
 

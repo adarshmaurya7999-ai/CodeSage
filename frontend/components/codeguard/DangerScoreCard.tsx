@@ -1,11 +1,9 @@
 "use client";
 
-"use client";
-
 import { usePRData } from "@/hooks/usePRData";
 
 export function DangerScoreCard() {
-  const { prView } = usePRData();
+  const { prView, analysisSummary } = usePRData();
   const score = prView.dangerScore;
   const r = 28;
   const circumference = 2 * Math.PI * r;
@@ -50,8 +48,8 @@ export function DangerScoreCard() {
 
         <div className="min-w-0 flex-1">
           <h3 className="text-[14px] font-bold text-[var(--critical)]">{prView.riskLabel}</h3>
-          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-[var(--text-secondary)]">
-            Multiple high-severity findings in payment-critical paths.
+          <p className="mt-0.5 line-clamp-3 text-[11px] leading-snug text-[var(--text-secondary)]">
+            {analysisSummary ?? "Analysis complete."}
           </p>
           <div className="relative mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
             <div

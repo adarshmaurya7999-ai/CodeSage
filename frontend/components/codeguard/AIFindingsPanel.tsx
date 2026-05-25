@@ -1,6 +1,6 @@
 "use client";
 
-import type { Severity } from "@/lib/mock-data";
+import type { Severity } from "@/lib/review/types";
 import { usePRData } from "@/hooks/usePRData";
 import { useReview } from "./ReviewContext";
 import { CommentIcon } from "./icons";
@@ -18,7 +18,8 @@ const summaryLabels: Record<Severity, { emoji: string; label: string; className:
 };
 
 export function AIFindingsPanel({ docked = false }: { docked?: boolean }) {
-  const { findings, analyzing } = usePRData();
+  const { findings, analyzing, hasAnalysis, isLivePR, analysisSummary, error, clearError } =
+    usePRData();
   const { setHighlightedLine } = useReview();
 
   const counts = findings.reduce(
@@ -29,38 +30,62 @@ export function AIFindingsPanel({ docked = false }: { docked?: boolean }) {
     { high: 0, medium: 0, low: 0 } as Record<Severity, number>,
   );
 
-  return (
-    <section className={`flex flex-col ${docked ? "h-full min-h-0" : "mt-5"}`}>
-      <h2 className="mb-2 flex shrink-0 items-center gap-2 text-[14px] font-semibold text-[var(--text-primary)]">
-        <span className="ai-glow-header text-[var(--accent)]">✦</span>
-        <span>AI Findings</span>
-        <span className="rounded bg-[var(--accent-subtle)] px-1.5 py-0.5 text-[11px] font-normal text-[var(--accent)]">
-          {findings.length}
-        </span>
-        {analyzing && (
-          <span className="text-[11px] font-normal text-[var(--text-muted)]">Analyzing…</span>
-        )}
-      </h2>
+  const showEmpty = isLivePR && !hasAnalysis && !analyzing;
 
-      <div className="findings-summary mb-2 shrink-0">
-        {(Object.keys(summaryLabels) as Severity[]).map((sev) =>
-          counts[sev] > 0 ? (
-            <span key={sev} className={`summary-pill ${summaryLabels[sev].className}`}>
-              {summaryLabels[sev].emoji} {counts[sev]} {summaryLabels[sev].label}
-            </span>
-          ) : null,
-        )}
-      </div>
+  return (
+    <section className={`flex min-h-0 flex-col ${docked ? "h-full" : "mt-5"}`}>
+      {hasAnalysis && analysisSummary && (
+        <p className="mb-2 shrink-0 text-[12px] leading-relaxed text-[var(--text-secondary)]">
+          {analysisSummary}
+        </p>
+      )}
+
+      {hasAnalysis && (
+        <div className="findings-summary mb-2 shrink-0">
+          {(Object.keys(summaryLabels) as Severity[]).map((sev) =>
+            counts[sev] > 0 ? (
+              <span key={sev} className={`summary-pill ${summaryLabels[sev].className}`}>
+                {summaryLabels[sev].emoji} {counts[sev]} {summaryLabels[sev].label}
+              </span>
+            ) : null,
+          )}
+        </div>
+      )}
 
       <div className="panel-card flex min-h-0 flex-1 flex-col overflow-hidden">
         {analyzing ? (
           <div className="space-y-2 p-4">
+            <p className="text-[12px] text-[var(--text-muted)]">
+              OpenRouter is reviewing your PR diff…
+            </p>
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="animate-pulse rounded-md bg-[var(--bg-sidebar)] px-4 py-4">
                 <div className="h-2 w-16 rounded bg-[var(--bg-card)]" />
                 <div className="mt-2 h-3 w-full rounded bg-[var(--bg-card)]" />
               </div>
             ))}
+          </div>
+        ) : error && isLivePR ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+            <p className="text-[13px] text-[var(--critical)]">{error}</p>
+            <button
+              type="button"
+              onClick={clearError}
+              className="text-[12px] text-[var(--accent)] underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : showEmpty ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
+            <span className="text-2xl text-[var(--accent)]">✦</span>
+            <p className="text-[13px] font-medium text-[var(--text-primary)]">
+              Ready to analyze
+            </p>
+            <p className="max-w-sm text-[12px] leading-relaxed text-[var(--text-muted)]">
+              Click <strong className="text-[var(--accent)]">Start analysis</strong> in the bar
+              below to scan this pull request with OpenRouter AI.
+            </p>
           </div>
         ) : (
           <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">

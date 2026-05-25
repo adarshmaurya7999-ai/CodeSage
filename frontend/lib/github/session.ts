@@ -4,6 +4,7 @@ import {
   getGitHubTokenByUserId,
 } from "@/lib/db/github-auth";
 import { GITHUB_USER_COOKIE } from "./oauth-config";
+import { decodeSignedSessionCookie } from "./session-cookie";
 
 export interface GitHubSessionUser {
   user_id: string | null;
@@ -15,7 +16,7 @@ export interface GitHubSessionUser {
 }
 
 /**
- * Signed-in GitHub user from session cookie (identity only — token lives in DB).
+ * Signed-in GitHub user from verified session cookie (token lives in DB).
  */
 export async function getGitHubSessionUser(): Promise<GitHubSessionUser | null> {
   const cookieStore = await cookies();
@@ -24,27 +25,11 @@ export async function getGitHubSessionUser(): Promise<GitHubSessionUser | null> 
     return null;
   }
 
-  try {
-    const parsed = JSON.parse(raw) as Partial<GitHubSessionUser>;
-    if (!parsed.login || typeof parsed.login !== "string") {
-      return null;
-    }
-
-    return {
-      user_id: typeof parsed.user_id === "string" ? parsed.user_id : null,
-      github_id: typeof parsed.github_id === "number" ? parsed.github_id : null,
-      login: parsed.login,
-      name: parsed.name ?? null,
-      avatar_url: parsed.avatar_url ?? "",
-      email: parsed.email ?? null,
-    };
-  } catch {
-    return null;
-  }
+  return await decodeSignedSessionCookie(raw);
 }
 
 /**
- * GitHub OAuth access token from `github_tokens` (Supabase), keyed by session user.
+ * GitHub OAuth access token from `github_tokens`, keyed by verified session user.
  */
 export async function getGitHubAccessToken(): Promise<string | null> {
   const sessionUser = await getGitHubSessionUser();
@@ -73,7 +58,7 @@ export async function requireGitHubAccessToken(): Promise<string> {
 }
 
 /**
- * Session user + DB token for GitHub API routes.
+ * Session user + DB token for protected API routes.
  */
 export async function requireGitHubSession(): Promise<{
   token: string;

@@ -6,6 +6,7 @@ import {
   GITHUB_OAUTH_STATE_COOKIE,
   GITHUB_USER_COOKIE,
 } from "@/lib/github/oauth-config";
+import { encodeSignedSessionCookie } from "@/lib/github/session-cookie";
 
 export const runtime = "nodejs";
 
@@ -126,18 +127,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     maxAge: 60 * 60 * 24 * 30,
   };
 
-  response.cookies.set(
-    GITHUB_USER_COOKIE,
-    JSON.stringify({
-      user_id: stored.userId,
-      github_id: ghUser.id,
-      login: ghUser.login,
-      name: ghUser.name,
-      avatar_url: ghUser.avatar_url,
-      email: ghUser.email,
-    }),
-    cookieOptions,
-  );
+  const sessionPayload = {
+    user_id: stored.userId,
+    github_id: ghUser.id,
+    login: ghUser.login,
+    name: ghUser.name,
+    avatar_url: ghUser.avatar_url,
+    email: ghUser.email,
+  };
+
+  const signedSession = await encodeSignedSessionCookie(sessionPayload);
+  if (!signedSession) {
+    return NextResponse.redirect(
+      `${origin}/login?error=auth&reason=${encodeURIComponent(
+        "Session signing is not configured (SESSION_SECRET or GITHUB_OAUTH_CLIENT_SECRET).",
+      )}`,
+    );
+  }
+
+  response.cookies.set(GITHUB_USER_COOKIE, signedSession, cookieOptions);
   response.cookies.set(GITHUB_OAUTH_STATE_COOKIE, "", { ...cookieOptions, maxAge: 0 });
 
   return response;

@@ -1,4 +1,4 @@
-import type { DiffLine } from "@/lib/mock-data";
+import type { DiffLine } from "@/lib/review/types";
 
 /**
  * Converts a unified diff patch into diff viewer rows.

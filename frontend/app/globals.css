@@ -777,17 +777,48 @@ body {
 }
 
 .dock-panel {
+  display: flex;
+  flex-direction: column;
   height: var(--dock-height);
   min-height: var(--dock-height);
   max-height: var(--dock-height);
   transition:
-    height 0.25s ease,
-    min-height 0.25s ease,
-    max-height 0.25s ease;
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dock-panel--minimized {
-  --dock-height: var(--dock-height-minimized, 44px);
+  --dock-height: calc(var(--dock-height-minimized, 44px));
+  min-height: var(--dock-height-minimized, 44px);
+  max-height: var(--dock-height-minimized, 44px);
+}
+
+.findings-dock.findings-dock.dock-panel:not(.dock-panel--minimized) {
+  --dock-height: 300px;
+  min-height: 300px;
+  max-height: 300px;
+}
+
+.findings-dock-body {
+  flex: 1;
+  min-height: 0;
+  animation: findings-rise 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes findings-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.diff-container {
+  min-height: 0;
 }
 
 .sidebar-dock {
