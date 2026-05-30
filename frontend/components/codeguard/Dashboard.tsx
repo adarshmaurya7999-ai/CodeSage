@@ -4,7 +4,7 @@ import { PRDataProvider } from "@/hooks/usePRData";
 import { CodeDiffViewer } from "./CodeDiffViewer";
 import { DashboardViewProvider, useDashboardView } from "./DashboardViewContext";
 import { FindingsDock } from "./FindingsDock";
-import { JarvisBackground } from "./JarvisBackground";
+import { DashboardShell } from "./DashboardShell";
 import { MainTabs } from "./MainTabs";
 import { ReviewProvider } from "./ReviewContext";
 import { Sidebar } from "./Sidebar";
@@ -24,7 +24,7 @@ function DashboardBody() {
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {isAnalytics ? (
-            <main className="main-content-area flex min-h-0 flex-1 flex-col overflow-hidden">
+            <main className="main-content-area flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <TeamAnalyticsView />
             </main>
           ) : (
@@ -48,10 +48,9 @@ export function Dashboard() {
     <PRDataProvider>
       <ReviewProvider>
         <DashboardViewProvider>
-          <div className="app-shell relative flex h-screen overflow-hidden">
-            <JarvisBackground />
+          <DashboardShell>
             <DashboardBody />
-          </div>
+          </DashboardShell>
         </DashboardViewProvider>
       </ReviewProvider>
     </PRDataProvider>

@@ -1,0 +1,330 @@
+/* Ask Sage — GPU transforms only; palette unchanged */
+
+.ask-sage {
+  --sage-accent: var(--accent);
+  --sage-violet: var(--accent-violet);
+  --sage-cyan: var(--accent-cyan);
+  --sage-ring: rgba(0, 212, 170, 0.45);
+  --sage-glow: rgba(139, 92, 246, 0.5);
+
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(15, 23, 42, 0.85);
+  color: var(--text-primary);
+  cursor: pointer;
+  overflow: visible;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.ask-sage:hover,
+.ask-sage:focus-visible {
+  border-color: rgba(0, 212, 170, 0.55);
+  box-shadow:
+    0 0 24px rgba(139, 92, 246, 0.25),
+    0 0 16px rgba(0, 212, 209, 0.12);
+}
+
+.ask-sage:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(0, 212, 170, 0.45),
+    0 0 24px rgba(139, 92, 246, 0.25);
+}
+
+.ask-sage:active {
+  transform: scale(0.98);
+}
+
+/* ── SageAvatar (circular frame) ── */
+.sage-avatar {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.sage-avatar__status-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.sage-avatar--thinking .sage-avatar__status-ring {
+  opacity: 1;
+  border-color: var(--sage-ring);
+  animation: sage-ring-pulse 1.2s ease-in-out infinite;
+}
+
+.sage-avatar__orb-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(139, 92, 246, 0.55) 0%,
+    rgba(0, 212, 170, 0.28) 42%,
+    transparent 70%
+  );
+  opacity: 0.55;
+  animation: sage-orb-pulse 3.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.ask-sage:hover .sage-avatar__orb-glow,
+.ask-sage:focus-visible .sage-avatar__orb-glow,
+.sage-avatar--interact .sage-avatar__orb-glow {
+  opacity: 0.95;
+  animation: sage-orb-flare 0.28s ease-out forwards;
+}
+
+.sage-avatar__frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 12, 24, 0.9);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.ask-sage:hover .sage-avatar__frame,
+.ask-sage:focus-visible .sage-avatar__frame,
+.sage-avatar--interact .sage-avatar__frame {
+  border-color: var(--sage-ring);
+  box-shadow:
+    0 0 0 2px rgba(0, 212, 170, 0.2),
+    0 0 20px rgba(139, 92, 246, 0.45);
+  transform: rotate(-6deg) scale(1.04);
+}
+
+.sage-avatar__frame {
+  animation: sage-breathe 4s ease-in-out infinite;
+}
+
+.sage-avatar__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+.sage-avatar__hair-sway {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1px dashed rgba(0, 212, 170, 0.12);
+  animation: sage-hair-sway 6s ease-in-out infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.sage-avatar--reply .sage-avatar__frame {
+  animation: sage-blink 0.45s ease-out;
+}
+
+.sage-avatar--thinking .sage-avatar__frame {
+  animation: sage-breathe 2.2s ease-in-out infinite;
+}
+
+.sage-avatar--thinking .sage-avatar__orb-glow {
+  animation: sage-orb-pulse 1.8s ease-in-out infinite;
+}
+
+.sage-avatar--reply .sage-avatar__orb-glow {
+  animation: sage-orb-flare 0.32s ease-out forwards;
+}
+
+/* ── Speech bubble ── */
+.ask-sage__bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  max-width: 140px;
+  padding: 0.4rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 212, 170, 0.35);
+  background: rgba(13, 21, 38, 0.96);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: translate3d(0, 8px, 0) scale(0.96);
+  pointer-events: none;
+}
+
+.ask-sage__bubble::after {
+  content: "";
+  position: absolute;
+  right: 1.25rem;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid rgba(0, 212, 170, 0.35);
+  border-bottom: 1px solid rgba(0, 212, 170, 0.35);
+  background: rgba(13, 21, 38, 0.96);
+  transform: rotate(45deg);
+}
+
+.ask-sage__bubble--visible {
+  animation: sage-bubble-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ask-sage__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.ask-sage__label-sage {
+  background: linear-gradient(135deg, var(--sage-cyan) 0%, var(--sage-violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Keyframes (compositor-friendly) ── */
+@keyframes sage-breathe {
+  0%,
+  100% {
+    transform: scale3d(0.96, 0.96, 1);
+  }
+  50% {
+    transform: scale3d(1.04, 1.04, 1);
+  }
+}
+
+@keyframes sage-orb-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale3d(0.92, 0.92, 1);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale3d(1.08, 1.08, 1);
+  }
+}
+
+@keyframes sage-orb-flare {
+  0% {
+    opacity: 0.55;
+    transform: scale3d(0.95, 0.95, 1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale3d(1.15, 1.15, 1);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale3d(1.05, 1.05, 1);
+  }
+}
+
+@keyframes sage-hair-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg) translate3d(-1px, 0, 0);
+  }
+  50% {
+    transform: rotate(3deg) translate3d(1px, 0, 0);
+  }
+}
+
+@keyframes sage-ring-pulse {
+  0%,
+  100% {
+    transform: scale3d(1, 1, 1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale3d(1.08, 1.08, 1);
+    opacity: 1;
+  }
+}
+
+@keyframes sage-blink {
+  0%,
+  100% {
+    transform: scale3d(1, 1, 1);
+  }
+  45% {
+    transform: scale3d(1, 0.12, 1);
+  }
+  55% {
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes sage-bubble-in {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
+}
+
+@media (max-width: 640px) {
+  .ask-sage {
+    padding: 0.35rem;
+    gap: 0;
+  }
+
+  .ask-sage__label {
+    display: none;
+  }
+
+  .ask-sage__bubble {
+    right: -0.25rem;
+    max-width: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sage-avatar__frame,
+  .sage-avatar__orb-glow,
+  .sage-avatar__hair-sway,
+  .sage-avatar__status-ring,
+  .ask-sage__bubble {
+    animation: none !important;
+  }
+
+  .ask-sage:hover .sage-avatar__frame,
+  .ask-sage:focus-visible .sage-avatar__frame,
+  .sage-avatar--interact .sage-avatar__frame {
+    transform: none;
+  }
+
+  .ask-sage__bubble--visible {
+    opacity: 1;
+    transform: none;
+  }
+}

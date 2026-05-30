@@ -12,8 +12,10 @@ const HUD_LABELS = [
 export function JarvisBackground() {
   return (
     <div className="jarvis-bg" aria-hidden>
+      <div className="jarvis-aurora" />
       <div className="jarvis-grid" />
       <div className="jarvis-grid jarvis-grid-fine" />
+      <div className="jarvis-mouse-glow" />
 
       <div className="jarvis-orb jarvis-orb-1" />
       <div className="jarvis-orb jarvis-orb-2" />

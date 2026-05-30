@@ -3,6 +3,7 @@
 import type { Severity } from "@/lib/review/types";
 import { usePRData } from "@/hooks/usePRData";
 import { useReview } from "./ReviewContext";
+import { SkeletonList } from "@/components/ui";
 import { CommentIcon } from "./icons";
 
 const severityConfig: Record<Severity, { label: string; pillClass: string }> = {
@@ -54,16 +55,11 @@ export function AIFindingsPanel({ docked = false }: { docked?: boolean }) {
 
       <div className="panel-card flex min-h-0 flex-1 flex-col overflow-hidden">
         {analyzing ? (
-          <div className="space-y-2 p-4">
-            <p className="text-[12px] text-[var(--text-muted)]">
+          <div className="space-y-2 p-4" role="status" aria-live="polite">
+            <p className="cs-text-body text-[var(--text-muted)]">
               OpenRouter is reviewing your PR diff…
             </p>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="animate-pulse rounded-md bg-[var(--bg-sidebar)] px-4 py-4">
-                <div className="h-2 w-16 rounded bg-[var(--bg-card)]" />
-                <div className="mt-2 h-3 w-full rounded bg-[var(--bg-card)]" />
-              </div>
-            ))}
+            <SkeletonList count={3} />
           </div>
         ) : error && isLivePR ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">

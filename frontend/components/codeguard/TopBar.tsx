@@ -5,7 +5,8 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { usePRData } from "@/hooks/usePRData";
 import { BrandLogo } from "./BrandLogo";
 import { useDashboardView } from "./DashboardViewContext";
-import { NavIcon, SparkleIcon } from "./icons";
+import { AskSageButton } from "./AskSageButton";
+import { NavIcon } from "./icons";
 import { DangerScorePopover } from "./DangerScorePopover";
 import { PRSelectorModal } from "./PRSelectorModal";
 
@@ -13,7 +14,7 @@ const navItems = [
   { id: "team-analytics" as const, label: "Team Analytics", icon: "chart" },
   { id: "pull-requests" as const, label: "Pull Requests", icon: "git-pull" },
   { id: "findings" as const, label: "Findings", icon: "alert" },
-];
+] as const;
 
 function DangerScoreBadge({ score, analyzing }: { score: number; analyzing: boolean }) {
   const tone =
@@ -21,23 +22,49 @@ function DangerScoreBadge({ score, analyzing }: { score: number; analyzing: bool
 
   if (analyzing) {
     return (
-      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-sidebar)]">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
+      <span className="top-bar__danger-badge top-bar__danger-badge--loading">
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
       </span>
     );
   }
 
   return (
     <span
-      className="danger-score-badge"
+      className="top-bar__danger-badge"
       style={{
         background: tone,
-        boxShadow: `0 0 14px color-mix(in srgb, ${tone} 55%, transparent)`,
+        boxShadow: `0 0 6px color-mix(in srgb, ${tone} 30%, transparent)`,
       }}
       aria-label={`Danger score ${score}`}
     >
       {score}
     </span>
+  );
+}
+
+function ContextChip({
+  label,
+  value,
+  mono,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`top-bar__chip nav-pop hover-lift ${className} ${!value || value === "—" ? "top-bar__chip--empty" : ""}`}
+    >
+      <span className="top-bar__chip-label">{label}</span>
+      <span
+        className={`top-bar__chip-value ${mono ? "top-bar__chip-value--mono" : ""}`}
+        title={value}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -49,6 +76,7 @@ export function TopBar() {
   const dangerBtnRef = useRef<HTMLButtonElement>(null);
   const branchName = prView.branch.split(" → ")[0] ?? prView.branch;
   const showPrContext = activeNav !== "team-analytics";
+  const prTitle = isLivePR ? `#${prView.number} ${prView.title}` : "—";
 
   function openAiChat() {
     window.dispatchEvent(new CustomEvent("codesage:expand-chat"));
@@ -73,106 +101,94 @@ export function TopBar() {
 
   return (
     <>
-      <header className="sticky top-0 z-20 flex h-[52px] shrink-0 items-center gap-3 border-b border-[var(--border)] bg-[var(--bg-panel)]/95 px-4 backdrop-blur-md">
-        <div className="flex min-w-0 shrink-0 items-center gap-2">
-          {!showPrContext && (
+      <header className="top-bar">
+        <div className="top-bar__zone top-bar__zone--left">
+          {showPrContext ? (
+            <>
+              <div className="top-bar__identity hidden shrink-0 md:flex">
+                <BrandLogo size="sm" className="top-bar__brand" />
+              </div>
+              <div className="top-bar__context-panel" role="group" aria-label="Pull request context">
+                <ContextChip
+                  label="Repository"
+                  value={prView.repository || "—"}
+                  className="top-bar__chip--repo"
+                />
+                <ContextChip
+                  label="Branch"
+                  value={branchName || "—"}
+                  mono
+                  className="top-bar__chip--branch"
+                />
+                <ContextChip
+                  label="Pull Request"
+                  value={prTitle}
+                  className="top-bar__chip--pr"
+                />
+              </div>
+            </>
+          ) : (
             <BrandLogo
               as="button"
               onClick={openPrReview}
               aria-label="Back to pull request review"
-              className="flex shrink-0"
+              className="shrink-0"
             />
           )}
-          <div
-            className={`hidden min-w-0 items-center gap-2 lg:flex ${showPrContext ? "" : "sr-only"}`}
-          >
-          <div className="hover-lift max-w-[160px] rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1">
-            <p className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Repository</p>
-            <p className="truncate text-[11px] font-medium text-[var(--text-primary)]">
-              {prView.repository}
-            </p>
-          </div>
-          <div className="hover-lift max-w-[130px] rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1">
-            <p className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Branch</p>
-            <p className="truncate font-[family-name:var(--font-fira-code)] text-[11px] text-[var(--text-primary)]">
-              {branchName}
-            </p>
-          </div>
-          {isLivePR && (
-            <div className="hover-lift hidden max-w-[200px] rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1 xl:block">
-              <p className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Pull Request</p>
-              <p className="truncate text-[11px] font-medium text-[var(--text-primary)]">
-                <span className="text-[var(--text-muted)]">#{prView.number}</span> {prView.title}
-              </p>
-            </div>
-          )}
-          </div>
         </div>
 
-        <nav className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden md:flex">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              title={item.label}
-              onClick={() => handleNavClick(item.id)}
-              className={`nav-tab-hover flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] transition ${
-                activeNav === item.id
-                  ? "bg-[var(--bg-card)] text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)] hover:bg-[var(--bg-card)]/60 hover:text-[var(--text-secondary)]"
-              }`}
-            >
-              <NavIcon name={item.icon} className="h-4 w-4 shrink-0" />
-              <span className="hidden lg:inline">{item.label}</span>
-            </button>
-          ))}
+        <nav className="top-bar__zone top-bar__zone--center" aria-label="Main">
+          <div className="top-bar__nav-pill">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                title={item.label}
+                onClick={() => handleNavClick(item.id)}
+                className={`top-bar__nav-item nav-pop nav-tab-hover ${
+                  activeNav === item.id ? "top-bar__nav-item--active" : ""
+                }`}
+              >
+                <NavIcon name={item.icon} className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">{item.label}</span>
+              </button>
+            ))}
+          </div>
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          {showPrContext && isLivePR && (
-            <span
-              className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                prView.status === "open"
-                  ? "text-[#052e1f] bg-[var(--success)]"
-                  : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
-              }`}
-            >
-              {prView.status === "open" ? "Open" : "Closed"}
-            </span>
-          )}
-
-          {showPrContext && (
-            <button
-              ref={dangerBtnRef}
-              type="button"
-              onClick={() => setDangerOpen((v) => !v)}
-              className={`hover-lift flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition ${
-                dangerOpen
-                  ? "border-[rgba(255,71,87,0.5)] bg-[rgba(255,71,87,0.1)]"
-                  : "border-[var(--border-bright)] bg-[var(--bg-card)] hover:border-[rgba(255,71,87,0.4)]"
-              }`}
-              aria-expanded={dangerOpen}
-              aria-haspopup="dialog"
-            >
-              <span className="hidden text-[11px] font-medium text-[var(--text-secondary)] sm:inline">
-                Danger Score
+        <div className="top-bar__zone top-bar__zone--right">
+          <div className="top-bar__actions">
+            {showPrContext && isLivePR && (
+              <span
+                className={`top-bar__status ${
+                  prView.status === "open" ? "top-bar__status--open" : "top-bar__status--closed"
+                }`}
+              >
+                {prView.status === "open" ? "Open" : "Closed"}
               </span>
-              <DangerScoreBadge score={prView.dangerScore} analyzing={analyzing && isLivePR} />
-              <span className="text-[12px] font-bold text-[var(--critical)]">{prView.riskLabel}</span>
-            </button>
-          )}
+            )}
 
-          <button
-            type="button"
-            onClick={openAiChat}
-            className="ask-ai-glow hover-lift flex items-center gap-1.5 rounded-md border bg-[rgba(109,40,217,0.2)] px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-violet)] transition hover:bg-[rgba(109,40,217,0.35)]"
-            aria-label="Open AI conversation"
-          >
-            <SparkleIcon className="text-[var(--accent-cyan)] drop-shadow-[0_0_6px_var(--accent-cyan)]" />
-            Ask AI
-          </button>
+            {showPrContext && (
+              <button
+                ref={dangerBtnRef}
+                type="button"
+                onClick={() => setDangerOpen((v) => !v)}
+                className={`top-bar__danger nav-pop hover-lift ${dangerOpen ? "top-bar__danger--open" : ""}`}
+                aria-expanded={dangerOpen}
+                aria-haspopup="dialog"
+              >
+                <span className="top-bar__danger-label">Risk</span>
+                <DangerScoreBadge score={prView.dangerScore} analyzing={analyzing && isLivePR} />
+                <span className="top-bar__danger-risk" title={prView.riskLabel}>
+                  {prView.riskLabel}
+                </span>
+              </button>
+            )}
 
-          <UserMenu />
+            <AskSageButton onClick={openAiChat} className="top-bar__ask-sage" />
+
+            <UserMenu compact />
+          </div>
         </div>
       </header>
 

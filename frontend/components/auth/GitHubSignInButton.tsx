@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui";
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -10,26 +11,50 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
-export function GitHubSignInButton() {
+type GitHubSignInButtonProps = {
+  variant?: "default" | "command-center";
+};
+
+export function GitHubSignInButton({ variant = "default" }: GitHubSignInButtonProps) {
   const [loading, setLoading] = useState(false);
 
   function handleSignIn() {
     setLoading(true);
-    // CodeSage Local OAuth App — callback: /api/auth/github/callback
     window.location.assign("/api/auth/github");
   }
 
-  return (
-    <div className="flex w-full flex-col gap-3">
+  if (variant === "command-center") {
+    return (
       <button
         type="button"
         onClick={handleSignIn}
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-[var(--border-bright)] bg-[var(--bg-surface)] px-4 py-3 text-[14px] font-medium text-[var(--text-primary)] transition hover:border-[var(--accent-cyan)] hover:bg-[var(--bg-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="login-github-btn"
+        aria-busy={loading}
       >
-        <GitHubIcon className="h-5 w-5" />
-        {loading ? "Redirecting to GitHub…" : "Continue with GitHub"}
+        <span className="login-github-btn__shine" aria-hidden />
+        <GitHubIcon className="login-github-btn__icon h-5 w-5" />
+        <span className="login-github-btn__text">
+          {loading ? "Establishing secure link…" : "Continue with GitHub"}
+        </span>
       </button>
+    );
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-3">
+      <Button
+        variant="secondary"
+        size="lg"
+        block
+        loading={loading}
+        loadingLabel="Redirecting to GitHub…"
+        onClick={handleSignIn}
+        leftIcon={<GitHubIcon className="h-5 w-5" />}
+        className="!border-[var(--border-bright)] hover:!border-[var(--accent-cyan)]"
+      >
+        Continue with GitHub
+      </Button>
       <p className="text-center text-[10px] leading-relaxed text-[var(--text-muted)]">
         Uses your CodeSage Local GitHub OAuth app. Callback:{" "}
         <code className="text-[var(--accent)]">/api/auth/github/callback</code>

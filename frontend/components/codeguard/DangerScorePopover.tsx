@@ -3,6 +3,7 @@
 import { useEffect, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { usePRData } from "@/hooks/usePRData";
+import { Button } from "@/components/ui";
 import { DangerScoreCard } from "./DangerScoreCard";
 import { PROverviewCard } from "./PROverviewCard";
 
@@ -60,14 +61,9 @@ export function DangerScorePopover({ open, onClose, anchorRef }: DangerScorePopo
           >
             Risk analysis
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded p-1 text-[var(--text-muted)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
-            aria-label="Close"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close" className="!px-2">
             ✕
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-3 p-4">

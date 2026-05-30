@@ -1,45 +1,34 @@
+import { normalizeChatRequestBody, type ChatApiRequestBody } from "@/lib/chat/buildChatRequest";
 import { chatCompletion } from "@/lib/openrouter";
 import { requireGitHubSession } from "@/lib/github/session";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-interface ChatMessageInput {
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface FindingContext {
-  file: string;
-  line?: number;
-  severity: string;
-  title: string;
-  description?: string;
-}
-
-interface ChatRequestBody {
-  question: string;
-  messages?: ChatMessageInput[];
-  prContext?: {
-    repository: string;
-    number: number;
-    title: string;
-    branch: string;
-    selectedFile?: string;
-    analysisSummary?: string | null;
-    findings?: FindingContext[];
-  };
+type ChatRequestBody = ChatApiRequestBody & {
   context?: {
     file?: string;
     line?: number;
     comment?: string;
     severity?: string;
   };
-}
+};
 
 function buildSystemPrompt(): string {
-  return `You are CodeSage AI, an expert code reviewer. Answer using only the PR context provided.
-Be concise. Reference files and line numbers when relevant. If no PR is loaded, tell the user to select a pull request first.`;
+  return `You are CodeSage AI, an expert code reviewer for pull requests.
+
+You ALWAYS receive PR metadata and unified diff patches in the user message. Use that code context — never claim you cannot see a file if its diff is provided below.
+
+When explaining issues, structure your reply clearly:
+1. **Summary** — one sentence on what is wrong (or that the change looks fine).
+2. **Issues** — bullet list; each item must include:
+   - **Where:** \`file:line\` (or file region)
+   - **What:** the bug, smell, or risk in plain language
+   - **Why it matters:** impact (security, correctness, maintainability)
+   - **Fix:** concrete suggestion or code direction
+3. If prior AI analysis findings are included, reference and expand on them; do not contradict them without reason.
+
+Be direct and helpful. Use markdown sparingly (bold labels as shown). If the user asks a narrow question, answer it but still cite specific lines from the diff.`;
 }
 
 function buildUserPrompt(body: ChatRequestBody): string {
@@ -48,23 +37,40 @@ function buildUserPrompt(body: ChatRequestBody): string {
   if (body.prContext) {
     const pr = body.prContext;
     parts.push(
+      `=== PULL REQUEST ===`,
       `PR #${pr.number}: ${pr.title}`,
       `Repository: ${pr.repository}`,
       `Branch: ${pr.branch}`,
     );
     if (pr.selectedFile) {
-      parts.push(`Currently viewing file: ${pr.selectedFile}`);
+      parts.push(`User is focused on file: ${pr.selectedFile}`);
+    }
+    if (pr.changedFiles?.length) {
+      parts.push(`All changed files (${pr.changedFiles.length}): ${pr.changedFiles.join(", ")}`);
     }
     if (pr.analysisSummary) {
-      parts.push(`Analysis summary: ${pr.analysisSummary}`);
+      parts.push(`\n=== PRIOR ANALYSIS SUMMARY ===\n${pr.analysisSummary}`);
     }
     if (pr.findings?.length) {
       parts.push(
-        "Findings:",
+        "\n=== PRIOR ANALYSIS FINDINGS ===",
         ...pr.findings.map(
           (f) =>
-            `- [${f.severity}] ${f.file}${f.line ? `:${f.line}` : ""} — ${f.title}${f.description ? `: ${f.description}` : ""}`,
+            `- [${f.severity.toUpperCase()}] ${f.file}${f.line ? `:${f.line}` : ""} — ${f.title}${f.description ? `\n  ${f.description}` : ""}`,
         ),
+      );
+    }
+    if (pr.fileDiffs?.length) {
+      parts.push("\n=== CODE DIFFS (use this as source of truth) ===");
+      for (const file of pr.fileDiffs) {
+        parts.push(
+          `\n--- FILE: ${file.filename} (${file.status}, +${file.additions}/-${file.deletions})${file.isPrimary ? " [PRIMARY - user is viewing this file]" : ""} ---`,
+          file.patch,
+        );
+      }
+    } else if (pr.selectedFile) {
+      parts.push(
+        `\n(No diff text was attached for ${pr.selectedFile}. Answer from findings/summary only, and say if you need the user to re-open the PR.)`,
       );
     }
   }
@@ -91,14 +97,22 @@ export async function POST(req: Request): Promise<NextResponse> {
   try {
     await requireGitHubSession();
 
-    const body = (await req.json()) as ChatRequestBody;
-    if (!body.question?.trim()) {
-      return NextResponse.json({ error: "question is required" }, { status: 400 });
+    const raw = (await req.json()) as Record<string, unknown> & ChatRequestBody;
+    const body = normalizeChatRequestBody(raw);
+    if (raw.context) {
+      (body as ChatRequestBody).context = raw.context;
     }
 
-    const answer = await chatCompletion(buildSystemPrompt(), buildUserPrompt(body));
+    if (!body.question?.trim()) {
+      return NextResponse.json(
+        { error: "question is required (send `question` or `message` in the JSON body)" },
+        { status: 400 },
+      );
+    }
 
-    return NextResponse.json({ answer });
+    const answer = await chatCompletion(buildSystemPrompt(), buildUserPrompt(body as ChatRequestBody));
+
+    return NextResponse.json({ answer, reply: answer });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Chat failed";
 

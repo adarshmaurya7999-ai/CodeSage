@@ -1,11 +1,15 @@
 "use client";
 
-import { ShieldIcon } from "./icons";
+import Image from "next/image";
+
+const LOGO_SRC = "/codesage-logo.png";
 
 interface BrandLogoProps {
   as?: "div" | "button";
   onClick?: () => void;
   className?: string;
+  size?: "sm" | "md";
+  showWordmark?: boolean;
   "aria-label"?: string;
 }
 
@@ -13,19 +17,33 @@ export function BrandLogo({
   as = "div",
   onClick,
   className = "",
+  size = "md",
+  showWordmark = true,
   "aria-label": ariaLabel,
 }: BrandLogoProps) {
+  const iconPx = size === "sm" ? 32 : 40;
+
   const content = (
     <>
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-card)] text-[var(--accent)]"
-        style={{ boxShadow: "0 0 18px rgba(0, 212, 170, 0.3)" }}
+        className="brand-logo__icon-wrap"
+        style={{ width: iconPx, height: iconPx }}
       >
-        <ShieldIcon className="h-5 w-5" />
+        <Image
+          src={LOGO_SRC}
+          alt=""
+          width={iconPx}
+          height={iconPx}
+          className="brand-logo__icon"
+          priority
+        />
       </span>
-      <span className="brand-logo-text">
-        CodeSage <span className="brand-logo-ai">AI</span>
-      </span>
+      {showWordmark && (
+        <span className="brand-logo-text">
+          <span className="brand-logo-word">CODESAGE</span>
+          <span className="brand-logo-ai"> AI</span>
+        </span>
+      )}
     </>
   );
 
@@ -34,13 +52,18 @@ export function BrandLogo({
       <button
         type="button"
         onClick={onClick}
-        aria-label={ariaLabel}
-        className={`brand-logo hover-lift rounded-lg px-1 py-0.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${className}`}
+        aria-label={ariaLabel ?? "CodeSage AI"}
+        className={`brand-logo brand-logo--interactive hover-lift rounded-lg px-1 py-0.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${className}`}
+        data-size={size}
       >
         {content}
       </button>
     );
   }
 
-  return <div className={`brand-logo ${className}`}>{content}</div>;
+  return (
+    <div className={`brand-logo ${className}`} data-size={size}>
+      {content}
+    </div>
+  );
 }

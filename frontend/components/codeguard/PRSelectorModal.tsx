@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import type { PullRequest, Repository } from "@/lib/github/types";
 import { usePRData } from "@/hooks/usePRData";
+import { Button, Input, Modal, SkeletonList } from "@/components/ui";
 
 interface PRSelectorModalProps {
   open: boolean;
@@ -19,15 +19,6 @@ function formatRelative(iso: string): string {
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   return new Date(iso).toLocaleDateString();
-}
-
-function SkeletonRow() {
-  return (
-    <div className="animate-pulse rounded-lg border border-[var(--border)] bg-[var(--bg-sidebar)] px-3 py-3">
-      <div className="h-3 w-1/2 rounded bg-[var(--bg-card)]" />
-      <div className="mt-2 h-2 w-1/3 rounded bg-[var(--bg-card)]" />
-    </div>
-  );
 }
 
 export function PRSelectorModal({ open, onClose }: PRSelectorModalProps) {
@@ -130,15 +121,6 @@ export function PRSelectorModal({ open, onClose }: PRSelectorModalProps) {
     void fetchRepos();
   }, [open, fetchRepos]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
   const filteredRepos = repos.filter((r) => {
     const q = search.toLowerCase();
     return r.full_name.toLowerCase().includes(q) || r.name.toLowerCase().includes(q);
@@ -176,94 +158,72 @@ export function PRSelectorModal({ open, onClose }: PRSelectorModalProps) {
     }
   }
 
-  if (!open || typeof document === "undefined") return null;
+  const breadcrumb = (
+    <>
+      <span className={step === "repos" ? "text-[var(--text-primary)]" : ""}>
+        Select Repository
+      </span>
+      <span className="mx-1.5" aria-hidden>
+        →
+      </span>
+      <span className={step === "pulls" ? "text-[var(--text-primary)]" : ""}>
+        Select Pull Request
+      </span>
+    </>
+  );
 
-  return createPortal(
-    <div className="pr-modal-root fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <button
-        type="button"
-        className="absolute inset-0 bg-[rgba(0,0,0,0.7)]"
-        aria-label="Close"
-        onClick={onClose}
-      />
-      <div
-        className="relative flex max-h-[min(640px,90vh)] w-full max-w-[520px] flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[var(--bg-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
-        role="dialog"
-        aria-labelledby="pr-modal-title"
-      >
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
-          <div>
-            <p
-              id="pr-modal-title"
-              className="font-[family-name:var(--font-jetbrains)] text-[11px] uppercase tracking-[0.15em] text-[var(--accent)]"
-            >
-              {step === "repos" ? "Select Repository" : "Select Pull Request"}
-            </p>
-            <p className="mt-1 text-[12px] text-[var(--text-muted)]">
-              <span className={step === "repos" ? "text-[var(--text-primary)]" : ""}>
-                Select Repository
-              </span>
-              <span className="mx-1.5">→</span>
-              <span className={step === "pulls" ? "text-[var(--text-primary)]" : ""}>
-                Select Pull Request
-              </span>
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-sidebar)] hover:text-[var(--text-primary)]"
-            aria-label="Close modal"
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={step === "repos" ? "Select Repository" : "Select Pull Request"}
+      subtitle={breadcrumb}
+      size="md"
+      initialFocus="first-focusable"
+    >
+      <div className="border-b border-[var(--border)] px-5 py-3">
+        <Input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={step === "repos" ? "Search repositories…" : "Search pull requests…"}
+          aria-label={step === "repos" ? "Search repositories" : "Search pull requests"}
+          inputClassName="cs-input--search"
+        />
+        {step === "pulls" && selectedRepo && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 !justify-start !px-0 text-[var(--accent)]"
+            onClick={() => {
+              setStep("repos");
+              setSearch("");
+              setPulls([]);
+            }}
           >
-            ✕
-          </button>
-        </div>
-
-        <div className="border-b border-[var(--border)] px-5 py-3">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={step === "repos" ? "Search repositories…" : "Search pull requests…"}
-            className="w-full rounded-lg border border-[rgba(0,212,170,0.27)] bg-[var(--bg-sidebar)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(0,212,170,0.15)]"
-          />
-          {step === "pulls" && selectedRepo && (
-            <button
-              type="button"
-              onClick={() => {
-                setStep("repos");
-                setSearch("");
-                setPulls([]);
-              }}
-              className="mt-2 text-[11px] text-[var(--accent)] hover:underline"
-            >
-              ← Back to repositories
-            </button>
-          )}
-        </div>
-
-        {error && (
-          <p className="mx-5 mt-3 rounded-md border border-[rgba(255,71,87,0.35)] bg-[rgba(255,71,87,0.1)] px-3 py-2 text-[12px] text-[var(--critical)]">
-            {error}
-          </p>
+            ← Back to repositories
+          </Button>
         )}
+      </div>
 
-        <div className="scroll-thin flex-1 overflow-y-auto px-3 py-3">
-          {loading || loadingPR ? (
-            <div className="space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonRow key={i} />
-              ))}
-            </div>
-          ) : step === "repos" ? (
-            <ul className="space-y-1">
-              {filteredRepos.map((repo) => (
-                <li key={repo.id}>
-                  <button
-                    type="button"
-                    onClick={() => void handleSelectRepo(repo)}
-                    className="pr-modal-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-[var(--bg-sidebar)]"
-                  >
+      {error && (
+        <p className="cs-alert cs-alert--error mx-5 mt-3" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="px-3 py-3">
+        {loading || loadingPR ? (
+          <SkeletonList count={6} />
+        ) : step === "repos" ? (
+          <ul className="space-y-1" role="listbox" aria-label="Repositories">
+            {filteredRepos.map((repo) => (
+              <li key={repo.id}>
+                <button
+                  type="button"
+                  onClick={() => void handleSelectRepo(repo)}
+                  className="cs-modal-list-item pr-modal-item items-center"
+                >
                     <img
                       src={repo.owner.avatar_url}
                       alt=""
@@ -290,15 +250,15 @@ export function PRSelectorModal({ open, onClose }: PRSelectorModalProps) {
                 </li>
               ))}
             </ul>
-          ) : (
-            <ul className="space-y-1">
-              {filteredPulls.map((pull) => (
-                <li key={pull.number}>
-                  <button
-                    type="button"
-                    onClick={() => void handleSelectPull(pull)}
-                    className="pr-modal-item flex w-full gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-[var(--bg-sidebar)]"
-                  >
+        ) : (
+          <ul className="space-y-1" role="listbox" aria-label="Pull requests">
+            {filteredPulls.map((pull) => (
+              <li key={pull.number}>
+                <button
+                  type="button"
+                  onClick={() => void handleSelectPull(pull)}
+                  className="cs-modal-list-item pr-modal-item"
+                >
                     <img
                       src={pull.user.avatar_url}
                       alt=""
@@ -324,10 +284,8 @@ export function PRSelectorModal({ open, onClose }: PRSelectorModalProps) {
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+        )}
       </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }

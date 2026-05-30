@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePRData } from "@/hooks/usePRData";
+import { Button } from "@/components/ui";
 import { AIFindingsPanel } from "./AIFindingsPanel";
 
 export function FindingsDock() {
@@ -47,7 +48,7 @@ export function FindingsDock() {
           disabled={!hasAnalysis && !analyzing}
           className="flex min-w-0 items-center gap-2 text-left disabled:cursor-default"
         >
-          <span className="ai-glow-header shrink-0 text-[var(--accent)]">✦</span>
+          <span className="shrink-0 text-[var(--accent)]">✦</span>
           <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
             AI Findings
           </span>
@@ -63,23 +64,21 @@ export function FindingsDock() {
 
         <div className="flex shrink-0 items-center gap-2">
           {hasAnalysis && (
-            <button
-              type="button"
-              onClick={handleToggleExpand}
-              className="rounded-md border border-[var(--border)] px-2.5 py-1 text-[11px] text-[var(--text-muted)] transition hover:border-[var(--border-bright)] hover:text-[var(--text-primary)]"
-            >
+            <Button variant="secondary" size="sm" onClick={handleToggleExpand}>
               {showExpanded ? "Collapse" : "Expand"}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="md"
             onClick={() => void handleStartAnalysis()}
             disabled={!canAnalyze}
-            className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-[12px] font-semibold text-[var(--bg-base)] shadow-[var(--glow-cyan)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            loading={analyzing}
+            loadingLabel="Analyzing…"
+            leftIcon={<span className="text-[14px]" aria-hidden>✦</span>}
           >
-            <span className="text-[14px]">✦</span>
-            {analyzing ? "Analyzing…" : hasAnalysis ? "Re-run analysis" : "Start analysis"}
-          </button>
+            {hasAnalysis ? "Re-run analysis" : "Start analysis"}
+          </Button>
         </div>
       </div>
 

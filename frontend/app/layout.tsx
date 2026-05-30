@@ -20,6 +20,10 @@ const firaCode = Fira_Code({
 export const metadata: Metadata = {
   title: "CodeSage AI — Code Review Dashboard",
   description: "AI-powered pull request review for engineering teams",
+  icons: {
+    icon: "/codesage-logo.png",
+    apple: "/codesage-logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { RiskTimeline } from "@/components/analytics/RiskTimeline";
 import type { TeamAnalyticsPayload, TeamAnalyticsPRRow } from "@/lib/github/teamAnalytics";
 import { defaultDateRange } from "@/lib/github/teamAnalytics";
 
@@ -100,7 +101,7 @@ export function TeamAnalyticsView() {
         : null;
 
   return (
-    <div className="team-analytics scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6">
+    <div className="team-analytics scroll-thin flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-5 py-6 pb-16">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">
@@ -250,7 +251,7 @@ export function TeamAnalyticsView() {
             </>
           )}
 
-          <section className="team-analytics-table-wrap panel-card hover-lift overflow-hidden">
+          <section className="team-analytics-table-wrap team-analytics-section panel-card shrink-0">
             <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
               <h2 className="text-[14px] font-semibold text-[var(--text-primary)]">PR History</h2>
               <span className="text-[11px] text-[var(--text-muted)]">
@@ -294,6 +295,10 @@ export function TeamAnalyticsView() {
               </div>
             )}
           </section>
+
+          <div className="team-analytics-timeline-anchor shrink-0 scroll-mt-6">
+            <RiskTimeline since={since} until={until} />
+          </div>
         </>
       )}
     </div>
